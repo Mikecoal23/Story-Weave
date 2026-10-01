@@ -1,0 +1,114 @@
+/* All classes are prefixed "pd-" so they can't clash with the child UI's CSS */
+.pd-layout {
+  display: flex;
+  min-height: 100svh;
+  text-align: left;
+}
+
+.pd-sidebar {
+  width: 200px;
+  box-sizing: border-box;
+  padding: 1.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border-right: 1px solid #aab;
+}
+
+.pd-brand {
+  margin: 0 0 1rem;
+  font-size: 1.1rem;
+}
+
+.pd-nav-item {
+  padding: 0.6rem 1rem;
+  text-align: left;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: none;
+  cursor: pointer;
+}
+
+.pd-nav-item.active {
+  font-weight: bold;
+  border-color: #4a9d8f;
+  color: #4a9d8f;
+}
+
+.pd-main {
+  flex: 1;
+  max-width: 960px;
+  padding: 2rem;
+}
+
+.pd-title {
+  margin: 0 0 1rem;
+  font-size: 1.6rem;
+}
+
+.pd-note {
+  padding: 1.5rem;
+  border: 2px solid #aab;
+  border-radius: 12px;
+  background: #f0f0f4;
+  color: #222;
+  text-align: center;
+}
+
+/* Two cards side by side on wide screens */
+.pd-grid {
+  margin-top: 1.5rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.pd-card {
+  padding: 1.25rem;
+  border: 1px solid #aab;
+  border-radius: 12px;
+}
+
+.pd-heading {
+  margin: 0 0 1rem;
+  font-size: 1.1rem;
+}
+
+.pd-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.pd-bar-label {
+  width: 3.5rem;
+}
+
+.pd-bar-track {
+  flex: 1;
+  height: 14px;
+  border: 1px solid #aab;
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+.pd-bar-fill {
+  height: 100%;
+  background: #4a9d8f;
+}
+
+.pd-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.pd-chip {
+  padding: 0.6rem 1.5rem;
+  border: 1px solid #aab;
+  border-radius: 20px;
+  background: #e4e4ec;
+  color: #222;
+  cursor: pointer;
+}
