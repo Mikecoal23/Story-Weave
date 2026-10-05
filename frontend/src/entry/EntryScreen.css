@@ -1,0 +1,28 @@
+.entry {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+}
+
+.entry-title {
+  margin: 0;
+  font-size: clamp(1.5rem, 4vw, 3rem);
+}
+
+.entry-buttons {
+  display: flex;
+  gap: 2rem;
+}
+
+.entry-btn {
+  padding: 2rem 4rem;
+  font-size: clamp(1.2rem, 2.5vw, 1.8rem);
+  color: var(--muted);
+  background: var(--btn-bg);
+  border: 2px solid var(--btn-border);
+  border-radius: 1rem;
+  cursor: pointer;
+}
