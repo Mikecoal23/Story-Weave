@@ -1,0 +1,45 @@
+.start {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+}
+
+.start-title {
+  margin: 0;
+  font-size: clamp(1.5rem, 4vw, 3rem);
+}
+
+.start-stories {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.start-story {
+  padding: 2rem 1.5rem;
+  font-size: clamp(1rem, 2vw, 1.4rem);
+  color: var(--muted);
+  background: var(--btn-bg);
+  border: 2px solid var(--btn-border);
+  border-radius: 1rem;
+  cursor: pointer;
+}
+
+/* Thicker colored border marks the chosen story */
+.start-story.selected {
+  border-color: var(--mic);
+  border-width: 4px;
+}
+
+.start-btn {
+  padding: 1.5rem 5rem;
+  font-size: clamp(1.2rem, 2.5vw, 1.8rem);
+  font-weight: 700;
+  color: white;
+  background: var(--mic);
+  border: none;
+  border-radius: 1rem;
+  cursor: pointer;
+}
