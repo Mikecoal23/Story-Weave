@@ -1,0 +1,100 @@
+.screen {
+  min-height: 100svh;
+  box-sizing: border-box;
+  padding: 2vmin 3vw 5vmin;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Title is centered on the page; Home is pinned to the left */
+.top-bar {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.title {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.home {
+  position: absolute;
+  left: 0;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.85rem;
+}
+
+.reader {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  text-align: center;
+}
+
+.sentence {
+  margin: 0;
+  max-width: 14em;
+  font-size: clamp(2rem, 6vw, 4.5rem);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.word {
+  padding: 0 0.1em;
+}
+
+.correct {
+  background: var(--correct-bg);
+}
+
+.retry {
+  background: var(--retry-bg);
+}
+
+.caption {
+  margin: 0;
+  font-size: clamp(0.75rem, 1.4vw, 0.95rem);
+  color: var(--muted);
+}
+
+.controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2vw;
+}
+
+.btn {
+  flex: 0 1 22%;
+  padding: 1.5rem 0.5rem;
+  font-size: clamp(1rem, 2vw, 1.4rem);
+  color: var(--muted);
+  background: var(--btn-bg);
+  border: 2px solid var(--btn-border);
+  border-radius: 1rem;
+  cursor: pointer;
+}
+
+.mic-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mic {
+  width: clamp(5rem, 14vw, 9rem);
+  aspect-ratio: 1;
+  font-size: clamp(1.2rem, 2.5vw, 1.8rem);
+  font-weight: 700;
+  color: white;
+  background: var(--mic);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+}

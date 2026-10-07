@@ -1,0 +1,42 @@
+[project]
+name = "storyweave-backend"
+version = "0.1.0"
+description = "FastAPI backend for StoryWeave"
+requires-python = ">=3.12"
+dependencies = [
+    "alembic>=1.14,<2",
+    "fastapi>=0.115,<1",
+    "psycopg[binary]>=3.2,<4",
+    "pydantic-settings>=2.6,<3",
+    "python-multipart>=0.0.32",
+    "sqlalchemy>=2.0,<3",
+    "uvicorn[standard]>=0.30,<1",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.27,<1",
+    "pytest>=8.3,<9",
+    "ruff>=0.9,<1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+"alembic/versions/*.py" = ["E501"]
+
+[tool.uv]
+# Resolves planning.md Open Question 10: uv 0.12 bumped uv.lock to format revision 5.
+# Pinning a floor here means `uv sync`/`uv run` refuses to proceed on an older uv
+# instead of silently producing a lockfile a teammate's uv can't read — the fix is a
+# one-line `uv self update`, not a lockfile argument.
+required-version = ">=0.12.23"

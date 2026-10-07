@@ -1,0 +1,18 @@
+:root {
+  --bg: #fff;
+  --text: #2a2d3a;
+  --muted: #6b7280;
+  --correct-bg: #d3eedb;
+  --retry-bg: #fce8a0;
+  --mic: #4a9d8f;
+  --btn-bg: #f4f6fb;
+  --btn-border: #aab0c4;
+
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+body {
+  margin: 0;
+}
