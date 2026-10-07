@@ -17,7 +17,7 @@ PLANNED_ROUTES = [
     ("POST", "/sessions/{session_id}/lines/{line_number}/audio"),
     ("GET", "/stories/{story_id}"),
     ("POST", "/stories/generate"),
-    ("GET", "/caregiver/{child_id}/dashboard"),
+    ("GET", "/caregivers/{child_id}/dashboard"),
 ]
 
 
@@ -44,7 +44,7 @@ def test_stub_routes_return_501() -> None:
         ),
         ("get", f"/stories/{uuid4()}", {}),
         ("post", "/stories/generate", {}),
-        ("get", f"/caregiver/{uuid4()}/dashboard", {}),
+        ("get", f"/caregivers/{uuid4()}/dashboard", {}),
     ]
 
     for method, path, kwargs in requests:
