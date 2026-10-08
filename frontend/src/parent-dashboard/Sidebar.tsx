@@ -5,10 +5,11 @@ const items: Tab[] = ['Home', 'Progress', 'Practice']
 type Props = {
   active: Tab
   onSelect: (tab: Tab) => void
+  onLogout: () => void
 }
 
 // Replaces the phone's bottom nav
-function Sidebar({ active, onSelect }: Props) {
+function Sidebar({ active, onSelect, onLogout }: Props) {
   return (
     <nav className="pd-sidebar">
       <h2 className="pd-brand">StoryWeave</h2>
@@ -22,6 +23,9 @@ function Sidebar({ active, onSelect }: Props) {
           {item}
         </button>
       ))}
+      <button type="button" className="pd-nav-item pd-logout" onClick={onLogout}>
+        Log out
+      </button>
     </nav>
   )
 }

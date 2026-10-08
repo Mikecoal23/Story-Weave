@@ -9,7 +9,11 @@ import Controls from './Controls'
 
 type Screen = 'pick' | 'loading' | 'reader' | 'finished'
 
-function ChildApp() {
+type Props = {
+  onSwitchReader: () => void
+}
+
+function ChildApp({ onSwitchReader }: Props) {
   const [screen, setScreen] = useState<Screen>('pick')
 
   if (screen === 'pick') return <StartScreen onStart={() => setScreen('loading')} />
@@ -18,7 +22,7 @@ function ChildApp() {
 
   return (
     <main className="screen">
-      <TopBar />
+      <TopBar onHome={onSwitchReader} />
       <SentenceReader />
       <Controls onNext={() => setScreen('finished')} />
     </main>

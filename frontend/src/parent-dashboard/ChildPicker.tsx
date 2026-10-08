@@ -1,20 +1,18 @@
-// Static sample data until GET /children is connected
-const children = [
-  { id: 1, name: 'Mia', interests: ['dinosaurs', 'the ocean'] },
-  { id: 2, name: 'Leo', interests: ['trucks', 'space'] },
-]
+import './ParentDashboard.css'
+import { children, type Child } from './mockChildren'
 
 type Props = {
-  onSelect: (name: string) => void
+  onSelect: (child: Child) => void
 }
 
+// Used by the child side: pick who is reading, then enter that child's PIN
 function ChildPicker({ onSelect }: Props) {
   return (
     <main className="pd-picker">
-      <h1 className="pd-title">Which child are you checking in on?</h1>
+      <h1 className="pd-title">Who is reading?</h1>
       <div className="pd-picker-list">
         {children.map((c) => (
-          <button key={c.id} className="pd-card pd-picker-card" onClick={() => onSelect(c.name)}>
+          <button key={c.id} className="pd-card pd-picker-card" onClick={() => onSelect(c)}>
             <span className="pd-heading">{c.name}</span>
             <span className="pd-stat">Likes: {c.interests.join(', ')}</span>
           </button>

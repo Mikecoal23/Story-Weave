@@ -135,6 +135,21 @@
   cursor: pointer;
 }
 
+.pd-practice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.pd-logout {
+  margin-top: auto;
+}
+
+.pd-select {
+  margin-bottom: 1rem;
+  padding: 0.4rem 0.6rem;
+}
+
 .pd-chips {
   display: flex;
   flex-wrap: wrap;

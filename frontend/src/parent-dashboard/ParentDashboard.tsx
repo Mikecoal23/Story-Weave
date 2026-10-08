@@ -1,24 +1,27 @@
 import { useState } from 'react'
 import './ParentDashboard.css'
 import Sidebar, { type Tab } from './Sidebar'
-import ChildPicker from './ChildPicker'
+import { children } from './mockChildren'
 import ParentHome from './ParentHome'
 import WeekSummary from './WeekSummary'
 import PatternsInProgress from './PatternsInProgress'
 import TryAtHome from './TryAtHome'
+import PracticeTab from './PracticeTab'
 
-function ParentDashboard() {
+type Props = {
+  onLogout: () => void
+}
+
+function ParentDashboard({ onLogout }: Props) {
   const [tab, setTab] = useState<Tab>('Home')
-  // null = child picker; the name isn't used yet but will pick which child's data to load
-  const [child, setChild] = useState<string | null>(null)
-
-  if (child === null) return <ChildPicker onSelect={setChild} />
+  // Defaults to the first child; the dropdown on Home switches it
+  const [child, setChild] = useState(children[0])
 
   return (
     <div className="pd-layout">
-      <Sidebar active={tab} onSelect={setTab} />
+      <Sidebar active={tab} onSelect={setTab} onLogout={onLogout} />
       <main className="pd-main">
-        {tab === 'Home' && <ParentHome />}
+        {tab === 'Home' && <ParentHome child={child} onChange={setChild} />}
         {tab === 'Progress' && (
           <>
             <WeekSummary />
@@ -28,6 +31,7 @@ function ParentDashboard() {
             </div>
           </>
         )}
+        {tab === 'Practice' && <PracticeTab />}
       </main>
     </div>
   )
