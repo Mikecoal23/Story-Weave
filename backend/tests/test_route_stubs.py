@@ -4,6 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.schemas.scoring import ScoreResult, WordScore
 from app.schemas.sessions import LineAudioResponse
 
 client = TestClient(app)
@@ -55,9 +56,29 @@ def test_stub_routes_return_501() -> None:
 
 
 def test_line_audio_response_always_includes_status() -> None:
-    response = LineAudioResponse(status="complete", result={"words": []})
+    result = ScoreResult(
+        words=[
+            WordScore(
+                expected_word="read",
+                recognized_word="read",
+                status="mastered",
+            )
+        ]
+    )
+    response = LineAudioResponse(status="complete", result=result)
 
-    assert response.model_dump() == {"status": "complete", "result": {"words": []}}
+    assert response.model_dump() == {
+        "status": "complete",
+        "result": {
+            "words": [
+                {
+                    "expected_word": "read",
+                    "recognized_word": "read",
+                    "status": "mastered",
+                }
+            ]
+        },
+    }
 
 
 def test_line_audio_response_rejects_unknown_status() -> None:

@@ -1,6 +1,8 @@
-from typing import Any, Literal
+from typing import Literal
 
 from pydantic import BaseModel
+
+from app.schemas.scoring import ScoreResult
 
 
 class LineAudioResponse(BaseModel):
@@ -8,9 +10,8 @@ class LineAudioResponse(BaseModel):
 
     `status` is present from day one so a future {"status": "pending", "job_id": ...}
     variant is an additive change, not a breaking one (see planning.md, 2026-09-30).
-    `result` is a placeholder until Michael defines ScoreResult; then replace the
-    `dict[str, Any] | None` type with that model.
+    `result` contains the per-word scores returned by the scoring service.
     """
 
     status: Literal["complete"]
-    result: dict[str, Any] | None = None
+    result: ScoreResult | None = None
