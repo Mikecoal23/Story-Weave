@@ -1,1 +1,1 @@
-export type WordStatus = 'neutral' | 'correct' | 'retry'
+export type WordStatus = 'shaky' | 'mastered' | 'missed'
