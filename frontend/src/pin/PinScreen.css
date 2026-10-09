@@ -1,0 +1,64 @@
+.pin {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.pin-title {
+  margin: 0;
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+}
+
+.pin-dots {
+  display: flex;
+  gap: 1rem;
+}
+
+.pin-dot {
+  width: 1.2rem;
+  aspect-ratio: 1;
+  border: 2px solid var(--btn-border);
+  border-radius: 50%;
+}
+
+.pin-dot.filled {
+  background: var(--mic);
+  border-color: var(--mic);
+}
+
+.pin-error {
+  margin: 0;
+  min-height: 1.5em;
+  color: #c0392b;
+}
+
+.pin-keys {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+.pin-key {
+  width: 4.5rem;
+  aspect-ratio: 1;
+  font-size: 1.5rem;
+  color: var(--muted);
+  background: var(--btn-bg);
+  border: 2px solid var(--btn-border);
+  border-radius: 1rem;
+  cursor: pointer;
+}
+
+/* Child version: bigger and rounder */
+.pin-kid .pin-key {
+  width: 6.5rem;
+  font-size: 2.2rem;
+  border-radius: 50%;
+}
+
+.pin-kid .pin-dot {
+  width: 1.8rem;
+}
