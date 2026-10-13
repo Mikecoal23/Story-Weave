@@ -1,0 +1,15 @@
+/* Reuses the .start layout from StartScreen.css */
+.spinner {
+  width: 4rem;
+  height: 4rem;
+  border: 0.5rem solid var(--btn-border);
+  border-top-color: var(--mic);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     )
     speechace_api_key: str | None = None
     merriam_webster_api_key: str | None = None
+    anthropic_api_key: str | None = None
+    anthropic_story_model: str = "claude-haiku-4-5-20251001"
 
     model_config = SettingsConfigDict(
         env_file=BACKEND_DIR / ".env",

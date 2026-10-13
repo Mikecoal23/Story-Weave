@@ -74,6 +74,16 @@
   font-size: 1.1rem;
 }
 
+.pd-stat {
+  margin: 0 0 0.5rem;
+}
+
+.pd-hint {
+  margin: 1rem 0 0;
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
+
 .pd-bar-row {
   display: flex;
   align-items: center;
@@ -96,6 +106,48 @@
 .pd-bar-fill {
   height: 100%;
   background: #4a9d8f;
+}
+
+/* Child picker screen */
+.pd-picker {
+  min-height: 100svh;
+  box-sizing: border-box;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.pd-picker-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.5rem;
+}
+
+.pd-picker-card {
+  min-width: 14rem;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pd-practice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.pd-logout {
+  margin-top: auto;
+}
+
+.pd-select {
+  margin-bottom: 1rem;
+  padding: 0.4rem 0.6rem;
 }
 
 .pd-chips {

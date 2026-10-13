@@ -1,4 +1,8 @@
-function Controls() {
+type Props = {
+  onNext: () => void
+}
+
+function Controls({ onNext }: Props) {
   return (
     <section className="controls">
       <button className="btn" onClick={() => console.log('Hear it')}>
@@ -10,7 +14,7 @@ function Controls() {
         </button>
         <span className="caption">Listening...</span>
       </div>
-      <button className="btn" onClick={() => console.log('Next line')}>
+      <button className="btn" onClick={onNext}>
         Next line
       </button>
     </section>
