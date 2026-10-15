@@ -164,3 +164,24 @@
   color: #222;
   cursor: pointer;
 }
+
+.pd-add {
+  margin-left: 0.75rem;
+  padding: 0.4rem 0.8rem;
+}
+
+.pd-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 22rem;
+}
+
+.pd-input {
+  padding: 0.5rem 0.6rem;
+}
+
+.pd-form-buttons {
+  display: flex;
+  gap: 0.75rem;
+}

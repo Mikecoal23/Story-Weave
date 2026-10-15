@@ -1,6 +1,8 @@
-const words = ['shop', 'shell', 'shed']
+type Props = {
+  words: string[]
+}
 
-function TryAtHome() {
+function TryAtHome({ words }: Props) {
   return (
     <section className="pd-card">
       <h2 className="pd-heading">Try at home</h2>

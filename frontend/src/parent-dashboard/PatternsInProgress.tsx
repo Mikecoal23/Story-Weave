@@ -1,11 +1,10 @@
-// Static sample data: fill is the bar's width in percent
-const patterns = [
-  { label: 'sh', fill: 90 },
-  { label: 'ch', fill: 65 },
-  { label: 'blends', fill: 30 },
-]
+import type { Dashboard } from '../api/types'
 
-function PatternsInProgress() {
+type Props = {
+  patterns: Dashboard['patterns']
+}
+
+function PatternsInProgress({ patterns }: Props) {
   return (
     <section className="pd-card">
       <h2 className="pd-heading">Patterns in progress</h2>

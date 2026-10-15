@@ -1,16 +1,47 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import './EndScreens.css'
+import { generateStory } from '../api/stories'
+import type { Story } from '../api/types'
 
 type Props = {
-  onDone: () => void
+  childId: string
+  onDone: (story: Story) => void
 }
 
-function LoadingScreen({ onDone }: Props) {
-  // Mock wait; the real version will finish when the backend returns the story
+function LoadingScreen({ childId, onDone }: Props) {
+  const [failed, setFailed] = useState(false)
+  // Bumping this re-runs the effect, which is how "Try again" re-requests the story
+  const [attempt, setAttempt] = useState(0)
+
   useEffect(() => {
-    const timer = setTimeout(onDone, 2000)
-    return () => clearTimeout(timer)
-  }, [onDone])
+    // Ignore the result if the screen was left before the story arrived
+    let cancelled = false
+    generateStory(childId)
+      .then((story) => {
+        if (!cancelled) onDone(story)
+      })
+      .catch(() => {
+        if (!cancelled) setFailed(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [childId, onDone, attempt])
+
+  function retry() {
+    setFailed(false)
+    setAttempt(attempt + 1)
+  }
+
+  if (failed)
+    return (
+      <main className="start">
+        <h1 className="start-title">Couldn't weave a story</h1>
+        <button className="start-btn" onClick={retry}>
+          Try again
+        </button>
+      </main>
+    )
 
   return (
     <main className="start">
