@@ -38,7 +38,11 @@ function ChildApp({ child, onSwitchReader }: Props) {
 
   return (
     <main className="screen">
-      <TopBar onHome={onSwitchReader} />
+      <TopBar
+        onHome={onSwitchReader}
+        current={lineIndex + 1}
+        total={story?.lines.length ?? 1}
+      />
       <SentenceReader line={story?.lines[lineIndex] ?? ''} />
       <Controls onNext={handleNext} />
     </main>

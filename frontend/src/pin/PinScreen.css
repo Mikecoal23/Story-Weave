@@ -1,15 +1,28 @@
+/* Theme from DESIGN.md: white canvas with one lilac color block holding the keypad.
+   The whole <main> is the block, so no TSX change was needed. */
 .pin {
-  min-height: 100svh;
+  box-sizing: border-box;
+  width: min(30rem, calc(100% - 2rem));
+  min-height: calc(100svh - 4rem);
+  margin: 2rem auto;
+  padding: 3rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 1rem;
+  color: #000;
+  background: #c5b0f4;
+  border-radius: 24px;
 }
 
 .pin-title {
   margin: 0;
-  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-weight: 340;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  text-align: center;
 }
 
 .pin-dots {
@@ -20,19 +33,18 @@
 .pin-dot {
   width: 1.2rem;
   aspect-ratio: 1;
-  border: 2px solid var(--btn-border);
+  background: #fff;
   border-radius: 50%;
 }
 
 .pin-dot.filled {
-  background: var(--mic);
-  border-color: var(--mic);
+  background: #000;
 }
 
 .pin-error {
   margin: 0;
   min-height: 1.5em;
-  color: #c0392b;
+  font-weight: 540;
 }
 
 .pin-keys {
@@ -41,24 +53,32 @@
   gap: 0.75rem;
 }
 
+/* Round white keys (icon-button shape from DESIGN.md) */
 .pin-key {
   width: 4.5rem;
   aspect-ratio: 1;
+  font: inherit;
   font-size: 1.5rem;
-  color: var(--muted);
-  background: var(--btn-bg);
-  border: 2px solid var(--btn-border);
-  border-radius: 1rem;
+  font-weight: 480;
+  color: #000;
+  background: #fff;
+  border: none;
+  border-radius: 9999px;
   cursor: pointer;
 }
 
-/* Child version: bigger and rounder */
+/* Child version: bigger */
 .pin-kid .pin-key {
-  width: 6.5rem;
+  width: 6rem;
   font-size: 2.2rem;
-  border-radius: 50%;
 }
 
 .pin-kid .pin-dot {
   width: 1.8rem;
+}
+
+@media (max-width: 480px) {
+  .pin {
+    padding: 2rem 1rem;
+  }
 }

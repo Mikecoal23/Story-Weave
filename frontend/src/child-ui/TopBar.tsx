@@ -1,14 +1,21 @@
 type Props = {
   onHome: () => void
+  current: number
+  total: number
 }
 
-function TopBar({ onHome }: Props) {
+function TopBar({ onHome, current, total }: Props) {
   return (
     <header className="top-bar">
-      <button className="btn home" onClick={onHome}>
-        Switch reader
+      <button className="close" onClick={onHome} aria-label="Switch reader">
+        ✕
       </button>
-      <h1 className="title">StoryWeave</h1>
+      <div className="progress">
+        <div className="progress-fill" style={{ width: `${(current / total) * 100}%` }} />
+      </div>
+      <span className="count">
+        {current}/{total}
+      </span>
     </header>
   )
 }

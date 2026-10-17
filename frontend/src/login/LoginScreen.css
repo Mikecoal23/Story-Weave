@@ -1,43 +1,67 @@
+/* Theme from DESIGN.md: white canvas, one lime color block, black pill button.
+   Colors are written out here because the --pd-* variables only exist inside the parent dashboard. */
 .login {
   min-height: 100svh;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 2rem;
+  padding: 2rem 1rem;
+  color: #000;
+  background: #fff;
 }
 
 .login-title {
   margin: 0;
-  font-size: clamp(1.5rem, 4vw, 3rem);
+  font-size: clamp(2.5rem, 7vw, 5.4rem);
+  font-weight: 340;
+  line-height: 1;
+  letter-spacing: -0.02em;
 }
 
+/* The lime color block: 24px corners, 48px padding, no shadow */
 .login-form {
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  width: min(20rem, 85vw);
+  width: min(26rem, 100%);
+  padding: 3rem;
+  background: #dceeb1;
+  border-radius: 24px;
 }
 
 .login-input {
-  padding: 0.8rem 1rem;
-  font-size: 1rem;
-  border: 2px solid var(--btn-border);
-  border-radius: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  font: inherit;
+  color: #000;
+  background: #fff;
+  border: 1px solid #e6e6e6;
+  border-radius: 8px;
+}
+
+/* Focus shows as a ring, the fill stays the same */
+.login-input:focus {
+  outline: 2px solid #000;
+  outline-offset: 1px;
 }
 
 .login-error {
   margin: 0;
   min-height: 1.5em;
-  color: #c0392b;
+  font-weight: 540;
 }
 
+/* Primary black pill */
 .login-btn {
-  padding: 0.9rem;
-  font-size: 1.1rem;
-  color: var(--muted);
-  background: var(--btn-bg);
-  border: 2px solid var(--btn-border);
-  border-radius: 0.75rem;
+  padding: 0.7rem 1.25rem;
+  font: inherit;
+  font-weight: 480;
+  color: #fff;
+  background: #000;
+  border: none;
+  border-radius: 50px;
   cursor: pointer;
 }

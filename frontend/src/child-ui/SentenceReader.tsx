@@ -8,6 +8,7 @@ type Props = {
 function SentenceReader({ line }: Props) {
   return (
     <section className="reader">
+      <h2 className="prompt">Read this sentence</h2>
       <p className="sentence">
         {line.split(' ').map((word, i) => (
           <Fragment key={i}>
@@ -15,10 +16,6 @@ function SentenceReader({ line }: Props) {
             <span className="word">{word}</span>
           </Fragment>
         ))}
-      </p>
-      <p className="caption">
-        Green = got it &nbsp; Yellow = try again later (soft tint, no sound,
-        no pop-up)
       </p>
     </section>
   )

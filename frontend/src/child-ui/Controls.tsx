@@ -4,20 +4,19 @@ type Props = {
 
 function Controls({ onNext }: Props) {
   return (
-    <section className="controls">
-      <button className="btn" onClick={() => console.log('Hear it')}>
-        Hear it
+    <>
+      <button className="mic" onClick={() => console.log('MIC')}>
+         Click to speak
       </button>
-      <div className="mic-wrap">
-        <button className="mic" onClick={() => console.log('MIC')}>
-          MIC
+      <footer className="bottom-bar">
+        <button className="btn btn-outline" onClick={() => console.log('Hear it')}>
+          Hear it
         </button>
-        <span className="caption">Listening...</span>
-      </div>
-      <button className="btn" onClick={onNext}>
-        Next line
-      </button>
-    </section>
+        <button className="btn btn-green" onClick={onNext}>
+          Next line
+        </button>
+      </footer>
+    </>
   )
 }
 
