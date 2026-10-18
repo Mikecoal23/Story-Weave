@@ -2,11 +2,11 @@ import { useState } from 'react'
 import LoginScreen from './login/LoginScreen'
 import EntryScreen from './entry/EntryScreen'
 import PinScreen from './pin/PinScreen'
-import ChildPicker from './parent-dashboard/ChildPicker'
+import ChildPicker from './child-ui/ChildPicker'
 import type { Child } from './api/types'
 import { getChildren } from './api/children'
 import ChildApp from './child-ui/ChildApp'
-import ParentDashboard from './parent-dashboard/ParentDashboard.tsx'
+import ParentDashboard from './parent-dashboard/ParentDashboard'
 
 type Screen = 'login' | 'entry' | 'parentPin' | 'parent' | 'childPicker' | 'childPin' | 'child'
 

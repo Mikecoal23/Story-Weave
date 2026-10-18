@@ -1,4 +1,4 @@
-import type { Child } from '../api/types'
+import type { Child } from './types'
 
 // Static sample data until GET /children is connected; read through api/children.ts
 export const children: Child[] = [

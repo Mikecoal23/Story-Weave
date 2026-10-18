@@ -1,16 +1,30 @@
-/* Theme from DESIGN.md: white canvas, one lime color block, black pill button.
+/* Theme from DESIGN.md: white canvas with the title on the left, a lilac form block on the right, black pill button.
    Colors are written out here because the --pd-* variables only exist inside the parent dashboard. */
 .login {
+  position: relative;
   min-height: 100svh;
   box-sizing: border-box;
+  display: flex;
+  align-items: stretch;
+  gap: 1rem;
+  padding: 1rem;
+  overflow: hidden; /* crops the circles and the offset block at the screen edge */
+  color: #000;
+  background: #fff;
+}
+
+/* White left side, everything centered */
+.login-hero {
+  position: relative;
+  box-sizing: border-box;
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2rem;
-  padding: 2rem 1rem;
-  color: #000;
-  background: #fff;
+  gap: 1rem;
+  padding: 3rem;
+  text-align: center;
 }
 
 .login-title {
@@ -21,21 +35,110 @@
   letter-spacing: -0.02em;
 }
 
-/* The lime color block: 24px corners, 48px padding, no shadow */
+.login-tagline {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+/* Big pastel circles sit behind the text and run off the screen edge */
+.login-shape {
+  position: absolute;
+  z-index: 0;
+  border-radius: 50%;
+}
+
+.login-shape-mint {
+  top: -5rem;
+  left: -5rem;
+  width: 18rem;
+  height: 18rem;
+  background: #c8e6cd;
+}
+
+.login-shape-pink {
+  bottom: -6rem;
+  left: 20%;
+  width: 20rem;
+  height: 20rem;
+  background: #efd4d4;
+}
+
+.login-shape-cream {
+  top: 12%;
+  right: 12%;
+  width: 7rem;
+  height: 7rem;
+  background: #f4ecd6;
+}
+
+/* Circles on the right: positioned from the whole page, hidden partly behind the form */
+.login-shape-lime {
+  top: -4rem;
+  right: 6%;
+  width: 16rem;
+  height: 16rem;
+  background: #dceeb1;
+}
+
+.login-shape-peach {
+  bottom: -5rem;
+  right: -3rem;
+  width: 18rem;
+  height: 18rem;
+  background: #f3c9b6;
+}
+
+.login-shape-green {
+  bottom: 14%;
+  right: 34%;
+  width: 6rem;
+  height: 6rem;
+  background: #c8e6cd;
+}
+
+.login-title,
+.login-tagline {
+  position: relative;
+  z-index: 1;
+}
+
+/* The lilac color block: 24px corners, 48px padding, no shadow.
+   It overlaps the white side by 4rem. The box-shadow has no blur, so it draws a solid black block offset 12px. */
 .login-form {
+  position: relative;
+  z-index: 1;
+  margin-left: -4rem;
+  margin-right: clamp(1rem, 8vw, 6rem);
+  align-self: center;
   box-sizing: border-box;
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  width: min(26rem, 100%);
-  padding: 3rem;
-  background: #dceeb1;
+  max-width: 26rem;
+  padding: 2rem;
+  background: #c5b0f4;
   border-radius: 24px;
+  box-shadow: 12px 12px 0 #000;
+}
+
+.login-heading {
+  margin: 0 0 0.5rem;
+  font-size: 2rem;
+  font-weight: 340;
+}
+
+.login-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-weight: 480;
 }
 
 .login-input {
-  padding: 0.75rem 0.9rem;
+  padding: 0.9rem 1rem;
   font: inherit;
+  font-weight: 400;
   color: #000;
   background: #fff;
   border: 1px solid #e6e6e6;
@@ -56,7 +159,7 @@
 
 /* Primary black pill */
 .login-btn {
-  padding: 0.7rem 1.25rem;
+  padding: 0.85rem 1.25rem;
   font: inherit;
   font-weight: 480;
   color: #fff;
@@ -64,4 +167,23 @@
   border: none;
   border-radius: 50px;
   cursor: pointer;
+}
+
+/* Narrow screens: stack the blocks, hero on top */
+@media (max-width: 768px) {
+  .login {
+    flex-direction: column;
+  }
+
+  .login-hero {
+    flex: none;
+    padding: 2rem;
+  }
+
+  .login-form {
+    flex: none;
+    margin: 0;
+    align-self: stretch;
+    max-width: none;
+  }
 }

@@ -1,5 +1,5 @@
 import { USE_MOCKS } from './config'
-import { children } from '../parent-dashboard/mockChildren'
+import { children } from './mockChildren'
 import type { Child } from './types'
 
 // No GET children route exists yet, so this always returns the mock list.
