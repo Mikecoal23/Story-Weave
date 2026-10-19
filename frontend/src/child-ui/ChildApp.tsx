@@ -34,7 +34,14 @@ function ChildApp({ child, onSwitchReader }: Props) {
 
   if (screen === 'pick') return <StartScreen onStart={() => setScreen('loading')} />
   if (screen === 'loading') return <LoadingScreen childId={child.id} onDone={handleStory} />
-  if (screen === 'finished') return <FinishedScreen onNewStory={() => setScreen('loading')} />
+  if (screen === 'finished')
+    return (
+      <FinishedScreen
+        lineCount={story?.lines.length ?? 0}
+        onNewStory={() => setScreen('loading')}
+        onDone={onSwitchReader}
+      />
+    )
 
   return (
     <main className="screen">

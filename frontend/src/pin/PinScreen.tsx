@@ -34,23 +34,28 @@ function PinScreen({ title, expectedPin, onSuccess, kid }: Props) {
 
   return (
     <main className={`pin ${kid ? 'pin-kid' : ''}`}>
-      <h1 className="pin-title">{title}</h1>
-      <div className="pin-dots">
-        {[0, 1, 2, 3].map((i) => (
-          <span key={i} className={`pin-dot ${i < digits.length ? 'filled' : ''}`} />
-        ))}
-      </div>
-      <p className="pin-error">{wrong ? 'Try again' : ''}</p>
-      <div className="pin-keys">
-        {keys.map((key, i) =>
-          key === '' ? (
-            <span key={i} />
-          ) : (
-            <button key={i} type="button" className="pin-key" onClick={() => press(key)}>
-              {key}
-            </button>
-          ),
-        )}
+      <span className="pin-shape pin-shape-mint" />
+      <span className="pin-shape pin-shape-pink" />
+      <span className="pin-shape pin-shape-peach" />
+      <div className="pin-card">
+        <h1 className="pin-title">{title}</h1>
+        <div className="pin-dots">
+          {[0, 1, 2, 3].map((i) => (
+            <span key={i} className={`pin-dot ${i < digits.length ? 'filled' : ''}`} />
+          ))}
+        </div>
+        <p className="pin-error">{wrong ? 'Try again' : ''}</p>
+        <div className="pin-keys">
+          {keys.map((key, i) =>
+            key === '' ? (
+              <span key={i} />
+            ) : (
+              <button key={i} type="button" className="pin-key" onClick={() => press(key)}>
+                {key}
+              </button>
+            ),
+          )}
+        </div>
       </div>
     </main>
   )

@@ -55,7 +55,6 @@ function LoginScreen({ onSuccess }: Props) {
       </form>
       <span className="login-shape login-shape-lime" />
       <span className="login-shape login-shape-peach" />
-      <span className="login-shape login-shape-green" />
     </main>
   )
 }

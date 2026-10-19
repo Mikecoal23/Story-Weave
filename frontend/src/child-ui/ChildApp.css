@@ -1,10 +1,44 @@
 /* Light, Duolingo-style reader: green accent, chunky buttons with a darker bottom edge */
 .screen {
+  position: relative;
+  overflow: hidden; /* crops the circles at the screen edge */
   min-height: 100svh;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  background: #fff;
+  /* same circles as the entry screen: peach is a gradient, mint and pink are ::before / ::after */
+  /* peach sits mid-left and pink mid-right, away from the bottom bar */
+  background: radial-gradient(circle at 6% 48%, #f3c9b6 3.5rem, transparent 3.55rem) #fff;
+}
+
+.screen::before,
+.screen::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  border-radius: 50%;
+}
+
+.screen::before {
+  top: -6rem;
+  left: -5rem;
+  width: 20rem;
+  height: 20rem;
+  background: #c5b0f4; /* lilac, so it doesn't blend into the mint progress bar */
+}
+
+.screen::after {
+  top: 35%;
+  right: -8rem;
+  width: 22rem;
+  height: 22rem;
+  background: #efd4d4;
+}
+
+/* Top bar, sentence and buttons sit above the circles */
+.screen > * {
+  position: relative;
+  z-index: 1;
 }
 
 /* X on the left, progress bar in the middle, "2/5" on the right */
@@ -21,7 +55,7 @@
 .close {
   padding: 0;
   font-size: 1.5rem;
-  color: #afafaf;
+  color: #000;
   background: none;
   border: none;
   cursor: pointer;
@@ -64,7 +98,6 @@
   margin: 0;
   font-size: clamp(1.4rem, 3vw, 2rem);
   font-weight: 540;
-  color: #3c3c3c;
 }
 
 .sentence {
@@ -74,7 +107,6 @@
   font-weight: 340;
   line-height: 1.3;
   text-align: center;
-  color: #3c3c3c;
 }
 
 .word {
@@ -90,25 +122,19 @@
   background: #f3c9b6;
 }
 
-/* Wide outlined mic button, like "Click to speak" */
+/* Main action: the black primary pill */
 .mic {
   align-self: center;
   margin-bottom: 2rem;
-  padding: 0.9rem 2rem;
+  padding: 1rem 3rem;
   font: inherit;
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #1f1d3d;
-  background: #fff;
-  border: 2px solid #e5e5e5;
-  border-bottom-width: 4px;
-  border-radius: 16px;
+  font-size: 1.3rem;
+  font-weight: 480;
+  color: #fff;
+  background: #000;
+  border: none;
+  border-radius: 50px;
   cursor: pointer;
-}
-
-.mic:active {
-  border-bottom-width: 2px;
-  transform: translateY(2px);
 }
 
 /* Full-width strip with a divider line above it */
@@ -120,31 +146,22 @@
   border-top: 2px solid #e5e5e5;
 }
 
+/* Pill buttons: white secondary ("Hear it") and lime for "Next line" */
 .btn {
-  padding: 0.9rem 2rem;
+  padding: 0.8rem 2rem;
   font: inherit;
-  font-size: 1rem;
-  font-weight: 700;
-  border: 2px solid;
-  border-bottom-width: 4px;
-  border-radius: 16px;
+  font-size: 1.1rem;
+  font-weight: 480;
+  color: #000;
+  border: 1px solid #000;
+  border-radius: 50px;
   cursor: pointer;
 }
 
-/* Pressing flattens the bottom edge */
-.btn:active {
-  border-bottom-width: 2px;
-  transform: translateY(2px);
-}
-
 .btn-outline {
-  color: #777;
   background: #fff;
-  border-color: #e5e5e5;
 }
 
 .btn-green {
-  color: #000;
-  background: #c8e6cd;
-  border-color: #8fc79a;
+  background: #dceeb1;
 }

@@ -1,6 +1,7 @@
 /* All classes are prefixed "pd-" so they can't clash with the child UI's CSS.
    Theme comes from DESIGN.md: black and white chrome, pill buttons, and
-   pastel color blocks with big rounded corners and no shadows. */
+   pastel color blocks with big rounded corners. Like the other screens, the blocks
+   have a hard-edged offset shadow and pastel circles sit behind the page. */
 .pd-layout {
   --pd-ink: #000;
   --pd-canvas: #fff;
@@ -11,14 +12,46 @@
   --pd-mint: #c8e6cd;
   --pd-pink: #efd4d4;
 
+  position: relative;
+  overflow: hidden; /* crops the circles at the screen edge */
   display: flex;
   min-height: 100svh;
   text-align: left;
   color: var(--pd-ink);
-  background: var(--pd-canvas);
+  /* the small peach circle is a gradient, the big two are ::before and ::after */
+  background: radial-gradient(circle at 94% 45%, #f3c9b6 3.5rem, transparent 3.55rem)
+    var(--pd-canvas);
 }
 
+.pd-layout::before,
+.pd-layout::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  border-radius: 50%;
+}
+
+.pd-layout::before {
+  top: -6rem;
+  right: -5rem;
+  width: 20rem;
+  height: 20rem;
+  background: var(--pd-mint);
+}
+
+.pd-layout::after {
+  bottom: -7rem;
+  right: 12%;
+  width: 22rem;
+  height: 22rem;
+  background: var(--pd-pink);
+}
+
+/* White sidebar and main content sit above the circles */
 .pd-sidebar {
+  position: relative;
+  z-index: 1;
+  background: var(--pd-canvas);
   width: 220px;
   box-sizing: border-box;
   padding: 1.5rem 1rem;
@@ -68,6 +101,8 @@
 }
 
 .pd-main {
+  position: relative;
+  z-index: 1;
   flex: 1;
   max-width: 1000px;
   padding: 3rem 2rem;
@@ -81,17 +116,23 @@
   letter-spacing: -0.03em;
 }
 
-/* Color blocks: no border, no shadow, the color is the depth */
+/* Color blocks: no border, hard offset shadow with no blur (same as the entry blocks) */
 .pd-note,
 .pd-card {
   padding: 2rem;
   border-radius: 24px;
   background: var(--pd-lime);
+  box-shadow: 10px 10px 0 #000;
 }
 
 .pd-note {
   background: var(--pd-cream);
   text-align: center;
+}
+
+/* The Home card isn't stretched across the whole page, so the circles show beside it */
+.pd-main > section > .pd-card {
+  max-width: 36rem;
 }
 
 /* Two cards side by side on wide screens */

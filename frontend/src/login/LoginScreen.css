@@ -88,14 +88,6 @@
   background: #f3c9b6;
 }
 
-.login-shape-green {
-  bottom: 14%;
-  right: 34%;
-  width: 6rem;
-  height: 6rem;
-  background: #c8e6cd;
-}
-
 .login-title,
 .login-tagline {
   position: relative;
@@ -126,6 +118,7 @@
   margin: 0 0 0.5rem;
   font-size: 2rem;
   font-weight: 340;
+  text-align: center;
 }
 
 .login-label {

@@ -68,7 +68,7 @@
 }
 
 .cp-card {
-  min-width: 14rem;
+  width: 17rem; /* same width for every child */
   padding: 2rem;
   font: inherit;
   color: inherit;
@@ -78,6 +78,15 @@
   border-radius: 24px;
   box-shadow: 10px 10px 0 #000; /* hard offset, no blur, same as login and entry */
   cursor: pointer;
+}
+
+/* Cards cycle through colors like the entry screen */
+.cp-card:nth-child(3n + 2) {
+  background: #c5b0f4;
+}
+
+.cp-card:nth-child(3n) {
+  background: #c8e6cd;
 }
 
 .cp-name {

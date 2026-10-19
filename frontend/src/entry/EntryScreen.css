@@ -65,11 +65,12 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 1.5rem;
+  gap: 2.5rem;
 }
 
 .entry-btn {
-  padding: 3rem 4rem;
+  min-width: 15rem; /* both blocks the same width */
+  padding: 4rem 3rem;
   font: inherit;
   font-size: clamp(1.4rem, 3vw, 2rem);
   font-weight: 540;
