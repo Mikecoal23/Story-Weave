@@ -9,7 +9,8 @@ class Settings(BaseSettings):
     database_url: str = (
         "postgresql+psycopg://storyweave:storyweave_dev_only@localhost:5432/storyweave"
     )
-    speechace_api_key: str | None = None
+    azure_speech_key: str | None = None
+    azure_speech_region: str | None = None
     merriam_webster_api_key: str | None = None
     anthropic_api_key: str | None = None
     anthropic_story_model: str = "claude-haiku-4-5-20251001"

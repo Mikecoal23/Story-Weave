@@ -8,6 +8,7 @@ StoryWeave is a read-aloud practice app for early readers. The repository uses a
 - `uv` for Python dependencies and commands
 - Node.js 22.12 or later
 - Docker Desktop with Docker Compose
+- FFmpeg (required to convert browser-recorded audio for Azure Speech)
 
 ## Start the database
 
