@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 
+from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes.caregivers import router as caregivers_router
 from app.api.routes.children import router as children_router
 from app.api.routes.dashboard import router as dashboard_router
@@ -8,6 +9,14 @@ from app.api.routes.sessions import router as sessions_router
 from app.api.routes.stories import router as stories_router
 
 app = FastAPI(title="StoryWeave API", version="0.1.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(health_router)
 app.include_router(caregivers_router)
 app.include_router(children_router)

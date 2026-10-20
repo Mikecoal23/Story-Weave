@@ -6,6 +6,7 @@ import FinishedScreen from './FinishedScreen'
 import TopBar from './TopBar'
 import SentenceReader from './SentenceReader'
 import Controls from './Controls'
+import { startSession } from '../api/sessions'
 import type { Child, Story } from '../api/types'
 
 type Screen = 'pick' | 'loading' | 'reader' | 'finished'
@@ -21,10 +22,19 @@ function ChildApp({ child, onSwitchReader }: Props) {
   const [story, setStory] = useState<Story | null>(null)
   const [lineIndex, setLineIndex] = useState(0)
 
-  function handleStory(newStory: Story) {
+  // The reading session the audio uploads belong to
+  const [sessionId, setSessionId] = useState<string | null>(null)
+
+  async function handleStory(newStory: Story) {
     setStory(newStory)
     setLineIndex(0)
+    setSessionId(null)
     setScreen('reader')
+    try {
+      setSessionId((await startSession(child.id, newStory.id)).id)
+    } catch {
+      // Mic stays disabled until a session exists
+    }
   }
 
   function handleNext() {
@@ -51,7 +61,7 @@ function ChildApp({ child, onSwitchReader }: Props) {
         total={story?.lines.length ?? 1}
       />
       <SentenceReader line={story?.lines[lineIndex] ?? ''} />
-      <Controls onNext={handleNext} />
+      <Controls sessionId={sessionId} lineNumber={lineIndex + 1} onNext={handleNext} />
     </main>
   )
 }
