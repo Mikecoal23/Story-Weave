@@ -20,6 +20,12 @@ docker compose up -d db
 
 The database is available locally at `localhost:5432`. The committed credentials are for local development only.
 
+For the shared Neon database, set `DATABASE_URL` to the pooled `-pooler` endpoint
+for application traffic and `DATABASE_URL_UNPOOLED` to the direct endpoint for
+Alembic migrations. The Neon URL examples in `backend/.env.example` are placeholders;
+keep real connection strings and Azure Speech credentials only in the ignored
+`backend/.env` file.
+
 ## Set up the backend
 
 ```sh
@@ -31,6 +37,8 @@ uv run uvicorn app.main:app --reload
 ```
 
 The API health endpoint is `http://localhost:8000/health`; interactive API docs are at `http://localhost:8000/docs`.
+Line scoring uses Azure Speech Pronunciation Assessment; configure `AZURE_SPEECH_KEY`
+and `AZURE_SPEECH_REGION` in `backend/.env`.
 
 ## Run checks
 

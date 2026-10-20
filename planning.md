@@ -37,7 +37,7 @@ StoryWeave listens to a child (grades 1–3) read aloud, uses speech recognition
 
 ---
 
-## 2. Current State — as of 2026-10-09
+## 2. Current State — as of 2026-10-19
 
 _What is actually true in the repo right now, so nobody has to reconstruct it from checkboxes. Update this section at every sprint boundary._
 
@@ -47,25 +47,25 @@ _What is actually true in the repo right now, so nobody has to reconstruct it fr
 |---|---|
 | Local stack | Docker Compose Postgres + FastAPI boot together; `GET /health` → `{"status":"ok"}`; `/docs` serves |
 | Database | 13-table schema at Alembic head `9cde937f7a48`, applied against **local Docker** Postgres and independently verified |
-| API contract | All 8 planned routes registered and visible in `/openapi.json`; every one returns **501** |
-| Service seams | `score_line_audio` has a real Azure Speech body (Michael, merged 2026-10-13; the result mapping is not yet validated against real recordings). `process_line_score` and `select_difficulty_target` are stubbed with frozen signatures and still raise `NotImplementedError` |
+| API contract | All 8 planned routes registered and visible in `/openapi.json`; line-audio upload is wired to synchronous scoring and persistence, while the other 7 routes remain **501** |
+| Service seams | Azure Speech scores each word. `process_line_score` now stores attempts and updates word-attributed pattern mastery; real-recording validation remains open. `select_difficulty_target` remains a stub |
 | Story generation | `generate_story_draft(patterns, interests, vocab_constraints) -> DraftStory` makes a **real** Anthropic Haiku 4.5 call; 3 pre-authored fallback templates exist with an automated vocabulary-drift test |
 | Frontend | Child read-aloud flow (reader, controls, top bar, start/loading/finished), parent dashboard (home, sidebar, patterns-in-progress, try-at-home, week summary, practice tab, child picker), general login, shared PIN keypad — all on mock data |
-| Tests | 12 passing, `ruff check` clean, all offline (the LLM is mocked) |
+| Tests | 38 passing, 9 local-Postgres tests skipped because Docker is unavailable; Ruff clean. Tests do not exercise live Azure Speech |
 
 ### Does not work yet
 
-- **Nothing is connected to anything else.** No frontend call reaches the backend; no backend route reaches a service function.
-- **Nothing points at Neon yet.** Neon is now the locked shared Postgres (2026-10-09, Open Question 9), but `backend/app/core/config.py` and `backend/.env.example` both still default to `localhost:5432` Docker Postgres, and the migration has only ever been applied against Docker. The `.agents/skills/neon-*` files, `neon.ts`, and the root `package.json` do **not** connect anything — see the Decisions Log entry for what's actually required.
-- **Neon `dev` is seeded (2026-10-16); production is not, and nothing else points at Neon.** The idempotent seed script (`backend/scripts/seed_vocabulary.py`, data in `backend/scripts/seed_data.py`) was verified on local Docker, then run on Neon `dev` by Shokhina: 9 patterns, 316 words (186 sight), 108 junction rows, and a second run changed nothing. Neon `dev` was confirmed to be at Alembic head `9cde937f7a48` first. The app and `backend/.env` still default to local Docker, so the controlled vocabulary exists in the shared database but no code reads it from there yet. See the 2026-10-16 Decisions Log entries.
-- **Scoring is half there.** `score_line_audio` calls Azure Speech Pronunciation Assessment (it needs FFmpeg to convert browser audio), but its mapping of Azure error types to `mastered`/`shaky`/`missed` has not been validated against representative recordings. `process_line_score` (persistence and mastery updates) is still `NotImplementedError`.
+- **The frontend is not connected to the backend yet.** The line-audio backend path is implemented; the UI still uses mock data.
+- **Neon is configured and verified on `dev`.** App traffic reads pooled `DATABASE_URL`; Alembic uses direct `DATABASE_URL_UNPOOLED` and rejects a `-pooler` host. On 2026-10-19, `alembic upgrade head` ran against the linked `dev` branch, which was already at `9cde937f7a48 (head)`; all 13 application tables and `alembic_version` were confirmed present. The app reads the database configured in `backend/.env`.
+- **Neon `dev` is seeded (2026-10-16); production is not.** The idempotent seed script (`backend/scripts/seed_vocabulary.py`, data in `backend/scripts/seed_data.py`) was verified on local Docker, then run on Neon `dev` by Shokhina: 9 patterns, 316 words (186 sight), 108 junction rows, and a second run changed nothing. The app reads the database configured in `backend/.env`.
+- **Azure scoring still needs validation with representative recordings.** The upload route and persistence path are tested offline; real Azure responses have not been validated end to end.
 - **No controlled-vocabulary validator, no regenerate loop, no fallback wiring.** The LLM can draft a story; nothing checks it.
 - **`select_difficulty_target` has no body**, so there is no diagnosis → generation handoff.
 - **Branch fragmentation:** _updated 2026-10-19._ `main` and `dev` had diverged. `main` held PR #9, story generation and the vocabulary seed (PR #11); `dev` held Michael's Azure scoring (PR #10). They are reconciled by merging `main` into `dev` on `sync/main-into-dev` (PR into `dev`; pending when this was written). `UXbranch` still needs `dev` merged into it afterwards. See the 2026-10-19 Decisions Log entry.
 
 ### The one-sentence summary
 
-Three healthy, well-contracted components that have never spoken to each other, sitting on an unseeded database across three branches.
+The Azure-scored backend path is wired through Neon and its schema is verified on `dev`, but frontend integration and real-recording validation remain.
 
 ---
 
@@ -190,17 +190,17 @@ These are cheap, mostly meetings, and each one blocks somebody's main lane. They
 #### Michael — Component 1: make scoring real
 
 - [x] Implement the Azure Speech Pronunciation Assessment call in `score_line_audio`: convert browser audio to WAV/PCM with FFmpeg, assess it against the expected text, and map Azure word error types to mastered / shaky / missed. _Done by Michael, merged 2026-10-13. The initial mapping must be validated against representative recordings before product use._
-- [ ] Implement the real `process_line_score(...)` body: persist to `reading_attempt`, attribute each scored word to its pattern(s) via `vocabulary_word_pattern`, update `phonics_mastery`. **Word-level attribution, not phoneme-position** — phoneme↔pattern mapping stays deferred (Sprint 3), per the 2026-09-30 decision.
-- [ ] Wire `POST /sessions/{session_id}/lines/{line_number}/audio` to call both synchronously, returning `{"status": "complete", "result": {...}}`.
-- [ ] Sight-word handling: look the read word up in `vocabulary_word`; if `is_sight_word = true`, skip it — no pattern credit, no penalty.
+- [x] Implement the real `process_line_score(...)` body: persist to `reading_attempt`, attribute each scored word to its pattern(s) via `vocabulary_word_pattern`, update `phonics_mastery`. **Word-level attribution, not phoneme-position** — phoneme↔pattern mapping stays deferred (Sprint 3), per the 2026-09-30 decision.
+- [x] Wire `POST /sessions/{session_id}/lines/{line_number}/audio` to call both synchronously, returning `{"status": "complete", "result": {...}}`.
+- [x] Sight-word handling: look the read word up in `vocabulary_word`; if `is_sight_word = true`, skip it — no pattern credit, no penalty. Sight-word attempts remain in `reading_attempt` for scoring history only.
 **Michael — wire up Neon (small, but on the critical path)**
 
 Pulled into Sprint 2 despite the scope cut, because it passes the same test everything else did: definition-of-done item 4 depends on it, and it *removes* work — the vocabulary gets seeded once instead of three times, and the demo stops depending on whose laptop has a healthy Docker container.
 
-- [ ] Point `DATABASE_URL` at Neon. Per the bundled `neon-postgres` skill's own pooled-vs-direct table, **Alembic must use the direct endpoint** and the app should use the **pooled** (`-pooler`) one — migrations need session state that pgBouncer's transaction pooling doesn't preserve. This means `alembic/env.py` and `app/core/config.py` may need two different URLs, not one.
-- [ ] Update `backend/.env.example` with a placeholder Neon URL and a comment naming which endpoint goes where. The real connection string contains a live password and belongs only in `.env` — which is correctly git-ignored today and must stay that way. Don't paste it into a PR, an issue, or a commit message; if it ever leaks, rotate it in the Neon console rather than hoping.
-- [ ] Run `alembic upgrade head` against Neon and confirm all 13 tables plus `alembic_version` land, the same way the Docker run was verified.
-- [ ] Decide the fate of the root-level `neon.ts`, `package.json`, and `package-lock.json`. `neon.ts` is an empty `defineConfig({})` stub and the two `@neon/*` packages are npm dependencies declared at the root of a repo whose backend is Python — so they aren't what connects us to Neon, and a stray root `package.json` can confuse tooling that expects the frontend's. Either wire them into something real and document how, or delete them and keep the `.agents/skills/` docs, which are the genuinely useful part.
+- [x] Configure separate Neon connection settings: pooled `DATABASE_URL` for the app and direct `DATABASE_URL_UNPOOLED` for Alembic. `alembic/env.py` rejects transaction-pooler hosts.
+- [x] Update `backend/.env.example` with placeholder Neon URLs and comments naming which endpoint goes where. Real connection strings belong only in the ignored `backend/.env`.
+- [x] Run `alembic upgrade head` against Neon `dev` and confirm all 13 tables plus `alembic_version` are present. _Verified 2026-10-19; the branch was already at head._
+- [x] Remove the unused root-level `neon.ts`, `package.json`, and `package-lock.json`; the Python backend connects using its Postgres URLs, and Neon skill docs remain in `.agents/skills/`.
 
 #### Shokhina — Components 2 & 3: close the generation loop
 
@@ -422,3 +422,11 @@ _Decisions A–F come from the 2026-10-15 ratification outcomes; the rest were m
 - **Reconciliation method.** A branch `sync/main-into-dev` was cut from `origin/dev`, `origin/main` was merged in, and the PR goes into `dev` as a **merge commit, not a squash or rebase** (a squash would recreate the divergence). Conflict resolutions: `backend/.env.example` keeps the Azure keys and the Anthropic keys and drops `SPEECHACE_API_KEY`; `backend/pyproject.toml` keeps both the `anthropic` and `azure-cognitiveservices-speech` dependencies; `backend/uv.lock` was not hand-merged (take `dev`'s, then regenerate with `uv lock`, and `uv lock --check` passes); `planning.md` takes `main`'s restructured file with Michael's Azure edits re-applied (above). Verified on the merged tree with a local database: 42 tests pass, `ruff check` clean, `alembic check` clean.
 - **After the sync merges:** `dev` contains everything `main` has plus Azure scoring; `main` is then brought up by a merge-commit PR from `dev`. `UXbranch` merges `dev`.
 - **Not decided yet (needs Michael, who owns the repo):** whether the GitHub default branch becomes `dev`, so new PRs default to the integration branch.
+
+### 2026-10-19 — Azure scoring persistence and Neon URL split
+
+- **Scored lines are persisted synchronously.** The audio route loads the requested line from the active reading session, calls Azure Speech, saves each word result, updates each linked phonics pattern's `attempts_count`, `correct_count`, and cumulative accuracy (`mastery_score`), then commits. Pattern attribution is by expected vocabulary word and `vocabulary_word_pattern`; phoneme-position mapping remains deferred to Sprint 3. A word linked to multiple patterns updates each pattern.
+- **Vocabulary lookup uses the seed's canonical normalizer.** Scored words are lowercased, curly apostrophes are normalized, and surrounding punctuation is stripped for lookup while the original expected word remains in the attempt record.
+- **Sight words remain in reading history but do not affect mastery.** Persisting `reading_attempt` retains the assessment record; skipping mastery updates for `is_sight_word` ensures no pattern credit or penalty. Unpatterned non-sight words also remain in reading history without affecting mastery.
+- **Neon uses separate pooled and direct URLs.** `DATABASE_URL` is the application's pooled endpoint; `DATABASE_URL_UNPOOLED` is for Alembic, which rejects a `-pooler` host. The sample file retains local Docker as its active default and documents placeholder Neon values; live secrets stay in ignored `.env` files.
+- **The unused root Neon npm scaffold was removed.** The Python backend connects through SQLAlchemy, and the root `neon.ts` was an empty config with no runtime consumer. Retain the useful `.agents/skills/` documentation instead. Neon migration verification is still open; do not report the shared database as validated until `alembic upgrade head` has been run there.
