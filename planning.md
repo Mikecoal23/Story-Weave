@@ -221,7 +221,7 @@ Ordered as a dependency chain — each item unblocks the next, so work them top 
 - [ ] Mic button: `MediaRecorder` → webm blob → multipart upload to the per-line audio route, per the 2026-09-30 per-line capture decision.
 - [ ] `ChildPicker` passes a child id (or the whole child object) rather than a name — sessions and story generation both require an id.
 - [ ] Render real word states in the reader using the G3 mapping.
-- [ ] Build the navigation flow: login → parent/child → dashboard or reader, with switch-reader and log-out paths. **PIN gates stay on mock behavior this sprint** (see the scope cut below), so build the flow with the gate as a pass-through seam.
+- [X] Build the navigation flow: login → parent/child → dashboard or reader, with switch-reader and log-out paths. **PIN gates stay on mock behavior this sprint** (see the scope cut below), so build the flow with the gate as a pass-through seam.
 - [ ] Second-pass dashboard against real data, *only if* the dashboard endpoint returns something before Oct 23. Otherwise this slides to Sprint 3 without penalty.
 
 #### All three — the integration milestone (moved here from Sprint 1)
