@@ -32,17 +32,11 @@ def test_all_planned_routes_are_in_openapi_schema() -> None:
 
 
 def test_stub_routes_return_501() -> None:
-    session_id = uuid4()
     requests = [
         ("post", "/caregivers", {}),
         ("post", f"/caregivers/{uuid4()}/session", {}),
         ("post", "/children", {}),
         ("post", "/sessions", {}),
-        (
-            "post",
-            f"/sessions/{session_id}/lines/1/audio",
-            {"files": {"audio": ("line.webm", b"x", "audio/webm")}},
-        ),
         ("get", f"/stories/{uuid4()}", {}),
         ("post", "/stories/generate", {}),
         ("get", f"/caregivers/{uuid4()}/dashboard", {}),
