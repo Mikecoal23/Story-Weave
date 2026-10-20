@@ -5,13 +5,28 @@ import tempfile
 import wave
 from io import BytesIO
 from pathlib import Path
+from string import punctuation
 from typing import Any
 from uuid import UUID
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.models import (
+    PhonicsMastery,
+    ReadingAttempt,
+    ReadingSession,
+    StoryLine,
+    VocabularyWord,
+    VocabularyWordPattern,
+)
 from app.schemas.scoring import ScoreResult, WordScore
+from scripts.seed_data import normalize_word
+
+
+def _normalize_scored_word(word: str) -> str:
+    return normalize_word(word).strip(punctuation.replace("'", ""))
 
 
 def score_line_audio(audio_bytes: bytes, expected_line: str) -> ScoreResult:
@@ -159,4 +174,74 @@ def process_line_score(
     score_result: ScoreResult,
 ) -> None:
     """Persist a line's score and update the child's phonics mastery."""
-    raise NotImplementedError("process_line_score is a Stage 2 task")
+    reading_session = session.get(ReadingSession, reading_session_id)
+    if reading_session is None:
+        raise ValueError("Reading session does not exist")
+
+    story_line = session.get(StoryLine, story_line_id)
+    if story_line is None or story_line.story_id != reading_session.story_id:
+        raise ValueError("Story line does not belong to the reading session")
+
+    word_keys = {
+        _normalize_scored_word(word.expected_word) for word in score_result.words
+    }
+    vocabulary_rows = session.execute(
+        select(VocabularyWord, VocabularyWordPattern.phonics_pattern_id)
+        .outerjoin(
+            VocabularyWordPattern,
+            VocabularyWordPattern.vocabulary_word_id == VocabularyWord.vocabulary_word_id,
+        )
+        .where(VocabularyWord.word.in_(word_keys))
+    ).all()
+
+    vocabulary_by_word: dict[str, tuple[VocabularyWord, set[int]]] = {}
+    for vocabulary_word, pattern_id in vocabulary_rows:
+        if vocabulary_word.word not in vocabulary_by_word:
+            vocabulary_by_word[vocabulary_word.word] = (vocabulary_word, set())
+        if pattern_id is not None:
+            vocabulary_by_word[vocabulary_word.word][1].add(pattern_id)
+
+    for word_index, word_score in enumerate(score_result.words, start=1):
+        word_key = _normalize_scored_word(word_score.expected_word)
+        vocabulary_entry = vocabulary_by_word.get(word_key)
+        vocabulary_word = vocabulary_entry[0] if vocabulary_entry else None
+        pattern_ids = vocabulary_entry[1] if vocabulary_entry else set()
+
+        session.add(
+            ReadingAttempt(
+                reading_session_id=reading_session_id,
+                story_line_id=story_line_id,
+                word_index=word_index,
+                expected_word=word_score.expected_word,
+                recognized_word=word_score.recognized_word,
+                vocabulary_word_id=(
+                    vocabulary_word.vocabulary_word_id if vocabulary_word else None
+                ),
+                result_status=word_score.status,
+            )
+        )
+
+        if vocabulary_word is None or vocabulary_word.is_sight_word:
+            continue
+
+        for pattern_id in pattern_ids:
+            mastery = session.get(
+                PhonicsMastery,
+                (reading_session.child_id, pattern_id),
+            )
+            if mastery is None:
+                mastery = PhonicsMastery(
+                    child_id=reading_session.child_id,
+                    phonics_pattern_id=pattern_id,
+                    mastery_score=0,
+                    attempts_count=0,
+                    correct_count=0,
+                )
+                session.add(mastery)
+
+            mastery.attempts_count += 1
+            if word_score.status == "mastered":
+                mastery.correct_count += 1
+            mastery.mastery_score = mastery.correct_count / mastery.attempts_count
+
+    session.flush()
