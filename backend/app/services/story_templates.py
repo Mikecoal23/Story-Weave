@@ -1,6 +1,5 @@
-import re
-
 from app.schemas.stories import FallbackStoryTemplate
+from app.services.vocabulary_validator import tokenize
 
 # The seeded `vocabulary_word` table doesn't exist yet (blocked on the team's
 # phonics-pattern ratification session), so these templates are drafted against
@@ -63,11 +62,9 @@ DRAFT_GLUE_WORDS = frozenset(
 
 ALLOWED_DRAFT_WORDS = STARTER_PATTERN_WORDS | STARTER_SIGHT_WORDS | DRAFT_GLUE_WORDS
 
-_WORD_RE = re.compile(r"[a-z']+")
-
 
 def words_in(text: str) -> set[str]:
-    return set(_WORD_RE.findall(text.lower()))
+    return set(tokenize(text))
 
 
 FALLBACK_TEMPLATES: tuple[FallbackStoryTemplate, ...] = (
