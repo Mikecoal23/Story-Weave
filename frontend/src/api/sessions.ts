@@ -2,11 +2,12 @@ import { USE_MOCKS } from './config'
 import { delay, request } from './client'
 import type { LineAudioResponse } from './types'
 
-// Underscored params are unused by the mock but match the real route's needs
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function startSession(_childId: string, _storyId: string): Promise<{ id: string }> {
+export async function startSession(childId: string, storyId: string): Promise<{ id: string }> {
   if (USE_MOCKS.sessions) return { id: 'mock-session-1' }
-  throw new Error('POST /sessions request body is not defined by the backend yet')
+  return request<{ id: string }>('/sessions', {
+    method: 'POST',
+    body: JSON.stringify({ child_id: childId, story_id: storyId }),
+  })
 }
 
 export async function uploadLineAudio(

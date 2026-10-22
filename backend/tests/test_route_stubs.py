@@ -14,6 +14,7 @@ PLANNED_ROUTES = [
     ("POST", "/caregivers"),
     ("POST", "/caregivers/{caregiver_id}/session"),
     ("POST", "/children"),
+    ("GET", "/caregivers/{caregiver_id}/children"),
     ("POST", "/sessions"),
     ("POST", "/sessions/{session_id}/lines/{line_number}/audio"),
     ("GET", "/stories/{story_id}"),
@@ -35,9 +36,6 @@ def test_stub_routes_return_501() -> None:
     requests = [
         ("post", "/caregivers", {}),
         ("post", f"/caregivers/{uuid4()}/session", {}),
-        ("post", "/children", {}),
-        ("post", "/sessions", {}),
-        ("get", f"/stories/{uuid4()}", {}),
         ("post", "/stories/generate", {}),
         ("get", f"/caregivers/{uuid4()}/dashboard", {}),
     ]

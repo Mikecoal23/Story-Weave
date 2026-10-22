@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from pydantic import BaseModel, ConfigDict
 
 
@@ -33,3 +35,12 @@ class FallbackStoryTemplate(BaseModel):
     theme: str
     pattern_codes: tuple[str, ...]
     lines: tuple[str, ...]
+
+
+class StoryResponse(BaseModel):
+    """Response from GET /stories/{story_id}; the shape the frontend's `Story` type expects."""
+
+    id: UUID
+    title: str
+    theme: str | None
+    lines: list[str]

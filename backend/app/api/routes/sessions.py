@@ -5,16 +5,24 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.models import ReadingSession, StoryLine
-from app.schemas.sessions import LineAudioResponse
+from app.models import ReadingSession, Story, StoryLine
+from app.schemas.sessions import LineAudioResponse, StartSessionRequest, StartSessionResponse
 from app.services.scoring import process_line_score, score_line_audio
 
 router = APIRouter()
 
 
-@router.post("/sessions")
-def start_session() -> None:
-    raise HTTPException(status_code=501, detail="Not implemented yet (Stage 2)")
+@router.post("/sessions", response_model=StartSessionResponse, status_code=201)
+def start_session(
+    body: StartSessionRequest, db: Session = Depends(get_db)
+) -> StartSessionResponse:
+    story = db.get(Story, body.story_id)
+    if story is None or story.child_id != body.child_id:
+        raise HTTPException(status_code=404, detail="Story not found for this child")
+    reading_session = ReadingSession(child_id=body.child_id, story_id=body.story_id)
+    db.add(reading_session)
+    db.commit()
+    return StartSessionResponse(id=reading_session.id)
 
 
 @router.post(

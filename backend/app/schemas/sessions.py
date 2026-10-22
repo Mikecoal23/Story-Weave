@@ -1,8 +1,18 @@
 from typing import Literal
+from uuid import UUID
 
 from pydantic import BaseModel
 
 from app.schemas.scoring import ScoreResult
+
+
+class StartSessionRequest(BaseModel):
+    child_id: UUID
+    story_id: UUID
+
+
+class StartSessionResponse(BaseModel):
+    id: UUID
 
 
 class LineAudioResponse(BaseModel):
