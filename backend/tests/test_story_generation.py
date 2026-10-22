@@ -61,3 +61,25 @@ def test_generate_story_draft_sends_patterns_and_vocabulary_to_the_model(
     assert "digraph_sh" in user_content
     assert "dinosaurs" in user_content
     assert "ship" in user_content
+    assert "rejected" not in user_content  # no feedback on a first attempt
+
+
+@patch("app.services.story_generation.anthropic.Anthropic")
+def test_generate_story_draft_includes_retry_feedback_in_the_prompt(
+    mock_anthropic_cls: MagicMock,
+) -> None:
+    mock_client = MagicMock()
+    mock_client.messages.create.return_value = fake_response(
+        {"title": "T", "theme": "t", "lines": ["One.", "Two."]}
+    )
+    mock_anthropic_cls.return_value = mock_client
+
+    patterns = [make_pattern("digraph_sh", "SH", ["ship", "wish"])]
+    generate_story_draft(
+        patterns, (), frozenset({"ship"}), feedback="It used words not allowed: dragon."
+    )
+
+    _, kwargs = mock_client.messages.create.call_args
+    user_content = kwargs["messages"][0]["content"]
+    assert "previous attempt was rejected" in user_content
+    assert "dragon" in user_content
