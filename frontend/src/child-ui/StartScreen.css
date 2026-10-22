@@ -1,45 +1,114 @@
+/* Theme from DESIGN.md: story choices are pastel color blocks, Start is the black pill.
+   Same look as the entry screen. .start is also used by the loading and finished screens,
+   so the circles are drawn in CSS only (::before, ::after and a gradient for the small one). */
 .start {
+  position: relative;
+  overflow: hidden; /* crops the circles at the screen edge */
   min-height: 100svh;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 2rem;
+  padding: 2rem 1rem;
+  color: #000;
+  background: radial-gradient(circle at 15% 78%, #f3c9b6 3.5rem, transparent 3.55rem) #fff;
+}
+
+.start::before,
+.start::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  border-radius: 50%;
+}
+
+.start::before {
+  top: -6rem;
+  left: -5rem;
+  width: 20rem;
+  height: 20rem;
+  background: #c8e6cd;
+}
+
+.start::after {
+  bottom: -7rem;
+  right: -4rem;
+  width: 22rem;
+  height: 22rem;
+  background: #efd4d4;
+}
+
+/* Content sits above the circles */
+.start > * {
+  position: relative;
+  z-index: 1;
 }
 
 .start-title {
   margin: 0;
-  font-size: clamp(1.5rem, 4vw, 3rem);
+  font-size: clamp(2rem, 6vw, 4rem);
+  font-weight: 340;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  text-align: center;
+}
+
+.start-sub {
+  margin: -1rem 0 0;
+  font-size: 1.4rem;
 }
 
 .start-stories {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 1.5rem;
 }
 
 .start-story {
   padding: 2rem 1.5rem;
+  font: inherit;
   font-size: clamp(1rem, 2vw, 1.4rem);
-  color: var(--muted);
-  background: var(--btn-bg);
-  border: 2px solid var(--btn-border);
-  border-radius: 1rem;
+  font-weight: 540;
+  color: #000;
+  background: #f4ecd6;
+  border: none;
+  border-radius: 24px;
+  box-shadow: 10px 10px 0 #000; /* hard offset, no blur, same as the entry blocks */
   cursor: pointer;
 }
 
-/* Thicker colored border marks the chosen story */
+.start-story:nth-child(2) {
+  background: #c8e6cd;
+}
+
+.start-story:nth-child(3) {
+  background: #efd4d4;
+}
+
+/* The chosen story looks pressed in: it moves into its shadow */
 .start-story.selected {
-  border-color: var(--mic);
-  border-width: 4px;
+  transform: translate(7px, 7px);
+  box-shadow: 3px 3px 0 #000;
+}
+
+/* White secondary pill (used by the finished screen) */
+.start-btn.secondary {
+  color: #000;
+  background: #fff;
+  border: 1px solid #000;
 }
 
 .start-btn {
-  padding: 1.5rem 5rem;
-  font-size: clamp(1.2rem, 2.5vw, 1.8rem);
-  font-weight: 700;
-  color: white;
-  background: var(--mic);
+  padding: 0.9rem 3rem;
+  font: inherit;
+  font-size: clamp(1.2rem, 2.5vw, 1.6rem);
+  font-weight: 480;
+  color: #fff;
+  background: #000;
   border: none;
-  border-radius: 1rem;
+  border-radius: 50px;
   cursor: pointer;
 }

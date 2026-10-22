@@ -1,58 +1,138 @@
-/* All classes are prefixed "pd-" so they can't clash with the child UI's CSS */
+/* All classes are prefixed "pd-" so they can't clash with the child UI's CSS.
+   Theme comes from DESIGN.md: black and white chrome, pill buttons, and
+   pastel color blocks with big rounded corners. Like the other screens, the blocks
+   have a hard-edged offset shadow and pastel circles sit behind the page. */
 .pd-layout {
+  --pd-ink: #000;
+  --pd-canvas: #fff;
+  --pd-hairline: #e6e6e6;
+  --pd-lime: #dceeb1;
+  --pd-lilac: #c5b0f4;
+  --pd-cream: #f4ecd6;
+  --pd-mint: #c8e6cd;
+  --pd-pink: #efd4d4;
+
+  position: relative;
+  overflow: hidden; /* crops the circles at the screen edge */
   display: flex;
   min-height: 100svh;
   text-align: left;
+  color: var(--pd-ink);
+  /* the small peach circle is a gradient, the big two are ::before and ::after */
+  background: radial-gradient(circle at 94% 45%, #f3c9b6 3.5rem, transparent 3.55rem)
+    var(--pd-canvas);
 }
 
+.pd-layout::before,
+.pd-layout::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  border-radius: 50%;
+}
+
+.pd-layout::before {
+  top: -6rem;
+  right: -5rem;
+  width: 20rem;
+  height: 20rem;
+  background: var(--pd-mint);
+}
+
+.pd-layout::after {
+  bottom: -7rem;
+  right: 12%;
+  width: 22rem;
+  height: 22rem;
+  background: var(--pd-pink);
+}
+
+/* White sidebar and main content sit above the circles */
 .pd-sidebar {
-  width: 200px;
+  position: relative;
+  z-index: 1;
+  background: var(--pd-canvas);
+  width: 220px;
   box-sizing: border-box;
   padding: 1.5rem 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  border-right: 1px solid #aab;
+  border-right: 1px solid var(--pd-hairline);
 }
 
+/* Mono uppercase is for labels like this one, never for body text */
 .pd-brand {
-  margin: 0 0 1rem;
-  font-size: 1.1rem;
+  margin: 0 0 1.5rem;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.95rem;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
-.pd-nav-item {
-  padding: 0.6rem 1rem;
-  text-align: left;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  background: none;
+/* Every button is a pill. Default is the white secondary pill. */
+.pd-nav-item,
+.pd-chip,
+.pd-add,
+.pd-form-buttons button {
+  padding: 0.6rem 1.25rem;
+  font: inherit;
+  font-weight: 480;
+  color: var(--pd-ink);
+  background: var(--pd-canvas);
+  border: 1px solid var(--pd-hairline);
+  border-radius: 50px;
   cursor: pointer;
 }
 
-.pd-nav-item.active {
-  font-weight: bold;
-  border-color: #4a9d8f;
-  color: #4a9d8f;
+.pd-nav-item {
+  text-align: left;
+  border-color: transparent;
+}
+
+/* Selected = the primary black pill */
+.pd-nav-item.active,
+.pd-add,
+.pd-form-buttons button[type='submit'] {
+  color: #fff;
+  background: var(--pd-ink);
+  border-color: var(--pd-ink);
 }
 
 .pd-main {
+  position: relative;
+  z-index: 1;
   flex: 1;
-  max-width: 960px;
-  padding: 2rem;
+  max-width: 1000px;
+  padding: 3rem 2rem;
 }
 
 .pd-title {
-  margin: 0 0 1rem;
-  font-size: 1.6rem;
+  margin: 0 0 1.5rem;
+  font-size: clamp(2rem, 4vw, 3.25rem);
+  font-weight: 340;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+
+/* Color blocks: no border, hard offset shadow with no blur (same as the entry blocks) */
+.pd-note,
+.pd-card {
+  padding: 2rem;
+  border-radius: 24px;
+  background: var(--pd-lime);
+  box-shadow: 10px 10px 0 #000;
 }
 
 .pd-note {
-  padding: 1.5rem;
-  border: 2px solid #aab;
-  border-radius: 12px;
-  background: #f0f0f4;
-  color: #222;
+  background: var(--pd-cream);
   text-align: center;
+}
+
+/* The Home card isn't stretched across the whole page, so the circles show beside it */
+.pd-main > section > .pd-card {
+  max-width: 36rem;
 }
 
 /* Two cards side by side on wide screens */
@@ -63,25 +143,40 @@
   gap: 1.5rem;
 }
 
-.pd-card {
-  padding: 1.25rem;
-  border: 1px solid #aab;
-  border-radius: 12px;
+.pd-grid > .pd-card:nth-child(1) {
+  background: var(--pd-lilac);
+}
+
+.pd-grid > .pd-card:nth-child(2) {
+  background: var(--pd-mint);
+}
+
+.pd-practice-list > .pd-card:nth-child(3n + 2) {
+  background: var(--pd-cream);
+}
+
+.pd-practice-list > .pd-card:nth-child(3n) {
+  background: var(--pd-pink);
 }
 
 .pd-heading {
   margin: 0 0 1rem;
-  font-size: 1.1rem;
+  font-size: 1.6rem;
+  font-weight: 540;
+  letter-spacing: -0.01em;
 }
 
 .pd-stat {
   margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 330;
 }
 
+/* Hierarchy comes from size and weight, not from gray or opacity */
 .pd-hint {
   margin: 1rem 0 0;
-  font-size: 0.9rem;
-  opacity: 0.7;
+  font-size: 0.95rem;
+  font-weight: 330;
 }
 
 .pd-bar-row {
@@ -93,46 +188,20 @@
 
 .pd-bar-label {
   width: 3.5rem;
+  font-weight: 480;
 }
 
 .pd-bar-track {
   flex: 1;
   height: 14px;
-  border: 1px solid #aab;
   border-radius: 7px;
+  background: var(--pd-canvas);
   overflow: hidden;
 }
 
 .pd-bar-fill {
   height: 100%;
-  background: #4a9d8f;
-}
-
-/* Child picker screen */
-.pd-picker {
-  min-height: 100svh;
-  box-sizing: border-box;
-  padding: 2rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-}
-
-.pd-picker-list {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 1.5rem;
-}
-
-.pd-picker-card {
-  min-width: 14rem;
-  background: none;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
+  background: var(--pd-ink);
 }
 
 .pd-practice-list {
@@ -143,11 +212,18 @@
 
 .pd-logout {
   margin-top: auto;
+  border-color: var(--pd-hairline);
 }
 
 .pd-select {
-  margin-bottom: 1rem;
-  padding: 0.4rem 0.6rem;
+  margin-bottom: 1.5rem;
+  padding: 0.6rem 1.25rem;
+  font: inherit;
+  font-weight: 480;
+  color: var(--pd-ink);
+  background: var(--pd-canvas);
+  border: 1px solid var(--pd-hairline);
+  border-radius: 50px;
 }
 
 .pd-chips {
@@ -156,11 +232,53 @@
   gap: 0.75rem;
 }
 
-.pd-chip {
-  padding: 0.6rem 1.5rem;
-  border: 1px solid #aab;
-  border-radius: 20px;
-  background: #e4e4ec;
-  color: #222;
-  cursor: pointer;
+.pd-add {
+  margin-left: 0.75rem;
+}
+
+.pd-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 22rem;
+}
+
+.pd-input {
+  padding: 0.75rem 0.9rem;
+  font: inherit;
+  color: var(--pd-ink);
+  background: var(--pd-canvas);
+  border: 1px solid var(--pd-hairline);
+  border-radius: 8px;
+}
+
+.pd-input:focus {
+  outline: 2px solid var(--pd-ink);
+  outline-offset: 1px;
+}
+
+.pd-form-buttons {
+  display: flex;
+  gap: 0.75rem;
+}
+
+/* Stack the cards and tighten padding on narrow screens */
+@media (max-width: 768px) {
+  .pd-layout {
+    flex-direction: column;
+  }
+
+  .pd-sidebar {
+    width: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--pd-hairline);
+  }
+
+  .pd-main {
+    padding: 2rem 1rem;
+  }
+
+  .pd-grid {
+    grid-template-columns: 1fr;
+  }
 }

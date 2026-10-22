@@ -22,26 +22,39 @@ function LoginScreen({ onSuccess }: Props) {
 
   return (
     <main className="login">
-      <h1 className="login-title">StoryWeave</h1>
+      <section className="login-hero">
+        <span className="login-shape login-shape-mint" />
+        <span className="login-shape login-shape-pink" />
+        <span className="login-shape login-shape-cream" />
+        <h1 className="login-title">StoryWeave</h1>
+        <p className="login-tagline">Read a story made just for you</p>
+      </section>
       <form className="login-form" onSubmit={handleSubmit}>
-        <input
-          className="login-input"
-          placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-        />
-        <input
-          className="login-input"
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+        <h2 className="login-heading">Log in</h2>
+        <label className="login-label">
+          Username
+          <input
+            className="login-input"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
+        </label>
+        <label className="login-label">
+          Password
+          <input
+            className="login-input"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </label>
         <p className="login-error">{error ? 'Wrong username or password' : ''}</p>
         <button type="submit" className="login-btn">
           Log in
         </button>
       </form>
+      <span className="login-shape login-shape-lime" />
+      <span className="login-shape login-shape-peach" />
     </main>
   )
 }

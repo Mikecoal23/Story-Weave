@@ -1,9 +1,15 @@
-function WeekSummary() {
+import type { Dashboard } from '../api/types'
+
+type Props = {
+  dashboard: Dashboard
+}
+
+function WeekSummary({ dashboard }: Props) {
   return (
     <section>
       <h1 className="pd-title">Your child's week</h1>
       <div className="pd-note">
-        Working on: sh and ch. Great progress on silent-e!
+        Working on: {dashboard.workingOn.join(' and ')}. Great progress on {dashboard.strongest}!
       </div>
     </section>
   )

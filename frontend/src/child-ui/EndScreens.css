@@ -2,8 +2,8 @@
 .spinner {
   width: 4rem;
   height: 4rem;
-  border: 0.5rem solid var(--btn-border);
-  border-top-color: var(--mic);
+  border: 0.5rem solid #e6e6e6;
+  border-top-color: #000;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }

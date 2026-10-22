@@ -227,7 +227,7 @@ Ordered as a dependency chain — each item unblocks the next, so work them top 
 - [ ] Mic button: `MediaRecorder` → webm blob → multipart upload to the per-line audio route, per the 2026-09-30 per-line capture decision. _2026-10-21, per `UXbranch`: `useRecorder.ts` records and `Controls` calls `uploadLineAudio`; it has not run against the real route, and the returned score is not rendered yet._
 - [ ] `ChildPicker` passes a child id (or the whole child object) rather than a name — sessions and story generation both require an id. _2026-10-21, per `UXbranch`: the id is passed to `ChildApp`, `LoadingScreen` and `startSession`; the ids are still the mock `'1'` and `'2'`, which the backend rejects with 422 until real children exist._
 - [ ] Render real word states in the reader using the G3 mapping.
-- [x] Build the navigation flow: login → parent/child → dashboard or reader, with switch-reader and log-out paths. **PIN gates stay on mock behavior this sprint** (see the scope cut below), so build the flow with the gate as a pass-through seam. _Ticked by Hailey on `UXbranch` 2026-10-20; reaches `dev` when that branch is merged._
+- [X] Build the navigation flow: login → parent/child → dashboard or reader, with switch-reader and log-out paths. **PIN gates stay on mock behavior this sprint** (see the scope cut below), so build the flow with the gate as a pass-through seam.
 - [ ] Second-pass dashboard against real data, *only if* the dashboard endpoint returns something before Oct 23. Otherwise this slides to Sprint 3 without penalty.
 
 #### All three — the integration milestone (moved here from Sprint 1)

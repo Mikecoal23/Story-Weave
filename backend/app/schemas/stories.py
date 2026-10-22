@@ -1,3 +1,4 @@
+from uuid import UUID
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
@@ -37,6 +38,13 @@ class FallbackStoryTemplate(BaseModel):
     lines: tuple[str, ...]
 
 
+class StoryResponse(BaseModel):
+    """Response from GET /stories/{story_id}; the shape the frontend's `Story` type expects."""
+
+    id: UUID
+    title: str
+    theme: str | None
+    lines: list[str]
 class ValidatedStory(DraftStory):
     """A story that passed the controlled-vocabulary validator, ready to persist.
 
