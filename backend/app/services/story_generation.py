@@ -22,6 +22,7 @@ def _build_user_prompt(
     patterns: Sequence[PhonicsPattern],
     interests: tuple[str, ...],
     vocab_constraints: frozenset[str],
+    feedback: str | None = None,
 ) -> str:
     pattern_lines = "\n".join(
         f"- {pattern.code} ({pattern.label}): e.g. {', '.join(pattern.example_words)}"
@@ -29,20 +30,25 @@ def _build_user_prompt(
     )
     interests_line = ", ".join(interests) if interests else "no particular theme"
     vocab_line = ", ".join(sorted(vocab_constraints))
-    return (
+    prompt = (
         f"Target phonics patterns:\n{pattern_lines}\n\n"
         f"Child's interests: {interests_line}\n\n"
         f"Allowed vocabulary (use only these words): {vocab_line}"
     )
+    if feedback:
+        prompt += f"\n\nYour previous attempt was rejected. {feedback}"
+    return prompt
 
 
 def generate_story_draft(
     patterns: Sequence[PhonicsPattern],
     interests: tuple[str, ...],
     vocab_constraints: frozenset[str],
+    feedback: str | None = None,
 ) -> DraftStory:
-    """Ask the LLM for one story draft. Not validated against the vocabulary yet --
-    that's the controlled-vocabulary validator's job, not this function's."""
+    """Ask the LLM for one story draft. Not validated against the vocabulary --
+    that's the validator's job (see story_pipeline). `feedback` is why the previous
+    draft was rejected, appended to the prompt on a retry."""
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
     message = client.messages.create(
         model=settings.anthropic_story_model,
@@ -51,7 +57,7 @@ def generate_story_draft(
         messages=[
             {
                 "role": "user",
-                "content": _build_user_prompt(patterns, interests, vocab_constraints),
+                "content": _build_user_prompt(patterns, interests, vocab_constraints, feedback),
             }
         ],
     )

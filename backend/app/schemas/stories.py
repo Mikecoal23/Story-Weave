@@ -1,4 +1,5 @@
 from uuid import UUID
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -44,3 +45,14 @@ class StoryResponse(BaseModel):
     title: str
     theme: str | None
     lines: list[str]
+class ValidatedStory(DraftStory):
+    """A story that passed the controlled-vocabulary validator, ready to persist.
+
+    `source` records whether the LLM wrote it or a pre-authored fallback template
+    was used, so the app can flag fallback stories later. `attempts` is how many LLM
+    drafts were requested before this story was settled on (== the attempt limit when
+    the fallback fired).
+    """
+
+    source: Literal["llm", "fallback"]
+    attempts: int
