@@ -3,13 +3,14 @@ import './LoginScreen.css'
 
 type Props = {
   onSuccess: () => void
+  loadError: string // set when login worked but the children couldn't be loaded
 }
 
 // Temporary bypass until POST /caregivers/{id}/session is connected
 const USERNAME = 'admin'
 const PASSWORD = '123'
 
-function LoginScreen({ onSuccess }: Props) {
+function LoginScreen({ onSuccess, loadError }: Props) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState(false)
@@ -48,7 +49,7 @@ function LoginScreen({ onSuccess }: Props) {
             onChange={(e) => setPassword(e.target.value)}
           />
         </label>
-        <p className="login-error">{error ? 'Wrong username or password' : ''}</p>
+        <p className="login-error">{error ? 'Wrong username or password' : loadError}</p>
         <button type="submit" className="login-btn">
           Log in
         </button>
