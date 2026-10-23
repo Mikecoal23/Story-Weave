@@ -1,6 +1,7 @@
 import pytest
 
-from app.services.story_templates import FALLBACK_TEMPLATES, STARTER_SIGHT_WORDS, words_in
+from app.services.story_templates import FALLBACK_TEMPLATES
+from app.services.vocabulary_validator import tokenize
 from scripts import seed_data
 from scripts.seed_data import PATTERNS, WordSeed, build_words, normalize_word
 
@@ -76,8 +77,9 @@ def test_irregular_th_words_stay_sight_words() -> None:
 
 
 def test_starter_sight_words_are_sight_words() -> None:
+    # The sight words in sprint1_phonics_pattern_starter_set.md, Section 2.
     words = by_word()
-    assert all(words[w].is_sight_word for w in STARTER_SIGHT_WORDS)
+    assert all(words[w].is_sight_word for w in ("said", "they", "of", "the", "was", "to", "you"))
 
 
 def test_apostrophe_and_i_are_stored_normalized() -> None:
@@ -104,7 +106,7 @@ def test_fallback_templates_only_use_seeded_words() -> None:
     # risk from planning.md: every template word must exist in the seed data.
     words = by_word()
     for template in FALLBACK_TEMPLATES:
-        used = set().union(*(words_in(line) for line in template.lines))
+        used = {token for text in (template.title, *template.lines) for token in tokenize(text)}
         assert used <= set(words), f"{template.title}: {sorted(used - set(words))}"
 
 

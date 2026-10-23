@@ -10,13 +10,12 @@ from uuid import UUID, uuid4
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import select, text
-from sqlalchemy.engine import make_url
-from sqlalchemy.exc import OperationalError
+from sqlalchemy import select
 from sqlalchemy.orm import Session
+from support import throwaway_schema
 
 from app.api.routes import stories as stories_route
-from app.db.session import engine, get_db
+from app.db.session import get_db
 from app.main import app
 from app.models import (
     Caregiver,
@@ -33,7 +32,6 @@ from app.schemas.stories import ValidatedStory
 from app.services import story_pipeline
 from app.services.story_pipeline import NoValidStoryError
 from app.services.story_templates import FALLBACK_TEMPLATES
-from scripts.seed_vocabulary import LOCAL_HOSTS, seed
 
 TABLES = [
     Caregiver.__table__,
@@ -116,28 +114,10 @@ def test_generate_returns_503_when_no_valid_story_exists(monkeypatch) -> None:
 
 @pytest.fixture
 def db() -> Generator[Session, None, None]:
-    """A throwaway schema holding the real seed, rolled back afterwards."""
-    if make_url(str(engine.url)).host not in LOCAL_HOSTS:
-        pytest.skip("story route DB tests only run against a local database")
-    try:
-        connection = engine.connect()
-    except OperationalError:
-        pytest.skip(
-            "local Postgres is not running (docker compose up -d db): "
-            "POST /stories/generate persistence was NOT tested"
-        )
-    transaction = connection.begin()
-    try:
-        connection.execute(text("CREATE SCHEMA generate_story_test"))
-        connection.execute(text("SET LOCAL search_path TO generate_story_test"))
-        for table in TABLES:
-            table.create(connection, checkfirst=False)
-        with Session(bind=connection) as session:
-            seed(session)
-            yield session
-    finally:
-        transaction.rollback()
-        connection.close()
+    with throwaway_schema(
+        "generate_story_test", TABLES, not_tested="POST /stories/generate persistence"
+    ) as session:
+        yield session
 
 
 def make_child(db: Session, interests: list[str] | None = None) -> Child:

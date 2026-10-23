@@ -8,12 +8,10 @@ local Postgres is running.
 from collections.abc import Generator
 
 import pytest
-from sqlalchemy import select, text
-from sqlalchemy.engine import make_url
-from sqlalchemy.exc import OperationalError
+from sqlalchemy import select
 from sqlalchemy.orm import Session
+from support import throwaway_schema
 
-from app.db.session import engine
 from app.models import (
     Caregiver,
     Child,
@@ -29,7 +27,6 @@ from app.models import (
 )
 from app.schemas.scoring import ScoreResult, WordScore
 from app.services.scoring import process_line_score
-from scripts.seed_vocabulary import LOCAL_HOSTS, seed
 
 TABLES = [
     Caregiver.__table__,
@@ -48,28 +45,10 @@ TABLES = [
 
 @pytest.fixture
 def db() -> Generator[Session, None, None]:
-    """A throwaway schema holding the real seed, rolled back afterwards."""
-    if make_url(str(engine.url)).host not in LOCAL_HOSTS:
-        pytest.skip("scoring DB tests only run against a local database")
-    try:
-        connection = engine.connect()
-    except OperationalError:
-        pytest.skip(
-            "local Postgres is not running (docker compose up -d db): "
-            "process_line_score persistence was NOT tested"
-        )
-    transaction = connection.begin()
-    try:
-        connection.execute(text("CREATE SCHEMA scoring_test"))
-        connection.execute(text("SET LOCAL search_path TO scoring_test"))
-        for table in TABLES:
-            table.create(connection, checkfirst=False)
-        with Session(bind=connection, autoflush=False, expire_on_commit=False) as session:
-            seed(session)
-            yield session
-    finally:
-        transaction.rollback()
-        connection.close()
+    with throwaway_schema(
+        "scoring_test", TABLES, not_tested="process_line_score persistence"
+    ) as session:
+        yield session
 
 
 def start_reading(db: Session, line_text: str) -> tuple[ReadingSession, StoryLine]:

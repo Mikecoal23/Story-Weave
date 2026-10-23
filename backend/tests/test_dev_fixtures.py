@@ -3,13 +3,11 @@
 from collections.abc import Generator
 
 import pytest
-from sqlalchemy import func, select, text
-from sqlalchemy.engine import make_url
-from sqlalchemy.exc import OperationalError
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
+from support import throwaway_schema
 
 from app.core.config import settings
-from app.db.session import engine
 from app.models import (
     Caregiver,
     Child,
@@ -30,7 +28,6 @@ from scripts.dev_fixtures import (
     main,
     seed_fixtures,
 )
-from scripts.seed_vocabulary import LOCAL_HOSTS, seed
 
 TABLES = [
     Caregiver.__table__,
@@ -44,39 +41,20 @@ TABLES = [
 ]
 
 
-def _throwaway_schema(*, seeded: bool) -> Generator[Session, None, None]:
-    if make_url(str(engine.url)).host not in LOCAL_HOSTS:
-        pytest.skip("dev fixtures DB tests only run against a local database")
-    try:
-        connection = engine.connect()
-    except OperationalError:
-        pytest.skip(
-            "local Postgres is not running (docker compose up -d db): "
-            "scripts.dev_fixtures was NOT tested"
-        )
-    transaction = connection.begin()
-    try:
-        connection.execute(text("CREATE SCHEMA dev_fixtures_test"))
-        connection.execute(text("SET LOCAL search_path TO dev_fixtures_test"))
-        for table in TABLES:
-            table.create(connection, checkfirst=False)
-        with Session(bind=connection) as session:
-            if seeded:
-                seed(session)
-            yield session
-    finally:
-        transaction.rollback()
-        connection.close()
-
-
 @pytest.fixture
 def db() -> Generator[Session, None, None]:
-    yield from _throwaway_schema(seeded=True)
+    with throwaway_schema(
+        "dev_fixtures_test", TABLES, not_tested="scripts.dev_fixtures"
+    ) as session:
+        yield session
 
 
 @pytest.fixture
 def empty_db() -> Generator[Session, None, None]:
-    yield from _throwaway_schema(seeded=False)
+    with throwaway_schema(
+        "dev_fixtures_test", TABLES, not_tested="scripts.dev_fixtures", seeded=False
+    ) as session:
+        yield session
 
 
 def count(db: Session, model) -> int:
