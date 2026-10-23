@@ -1,5 +1,5 @@
-from uuid import UUID
 from typing import Literal
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
@@ -45,6 +45,23 @@ class StoryResponse(BaseModel):
     title: str
     theme: str | None
     lines: list[str]
+
+
+class GenerateStoryRequest(BaseModel):
+    child_id: UUID
+
+
+class GenerateStoryResponse(StoryResponse):
+    """Response from POST /stories/generate: the saved story plus how it was produced.
+
+    `source` is "fallback" when no LLM draft passed validation (Open Question 16: returned
+    here only, not stored); `attempts` is how many LLM drafts were requested.
+    """
+
+    source: Literal["llm", "fallback"]
+    attempts: int
+
+
 class ValidatedStory(DraftStory):
     """A story that passed the controlled-vocabulary validator, ready to persist.
 

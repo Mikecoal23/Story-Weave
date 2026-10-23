@@ -1,6 +1,8 @@
 import json
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from app.models.entities import PhonicsPattern
 from app.services.story_generation import generate_story_draft
 
@@ -41,6 +43,40 @@ def test_generate_story_draft_parses_the_llm_response(mock_anthropic_cls: MagicM
     assert draft.theme == "a frog and a ship"
     assert draft.pattern_codes == ("digraph_sh",)
     assert draft.lines == ("A frog sat by a ship.", "The frog had a wish.")
+
+
+@patch("app.services.story_generation.anthropic.Anthropic")
+def test_generate_story_draft_accepts_json_wrapped_in_a_code_fence(
+    mock_anthropic_cls: MagicMock,
+) -> None:
+    # What the real model returns: the JSON inside a ```json fence (seen 2026-10-22).
+    payload = {"title": "Ship Wish", "theme": "a ship", "lines": ["A frog sat by a ship."]}
+    response = MagicMock()
+    response.content = [MagicMock(text=f"```json\n{json.dumps(payload, indent=2)}\n```")]
+    mock_client = MagicMock()
+    mock_client.messages.create.return_value = response
+    mock_anthropic_cls.return_value = mock_client
+
+    draft = generate_story_draft(
+        [make_pattern("digraph_sh", "SH", ["ship"])], (), frozenset({"a", "frog", "ship"})
+    )
+
+    assert draft.title == "Ship Wish"
+    assert draft.lines == ("A frog sat by a ship.",)
+
+
+@patch("app.services.story_generation.anthropic.Anthropic")
+def test_generate_story_draft_still_rejects_a_reply_with_no_json(
+    mock_anthropic_cls: MagicMock,
+) -> None:
+    response = MagicMock()
+    response.content = [MagicMock(text="Sorry, I cannot write that.")]
+    mock_client = MagicMock()
+    mock_client.messages.create.return_value = response
+    mock_anthropic_cls.return_value = mock_client
+
+    with pytest.raises(ValueError):
+        generate_story_draft([make_pattern("digraph_sh", "SH", ["ship"])], (), frozenset({"a"}))
 
 
 @patch("app.services.story_generation.anthropic.Anthropic")

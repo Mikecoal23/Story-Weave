@@ -36,7 +36,6 @@ def test_stub_routes_return_501() -> None:
     requests = [
         ("post", "/caregivers", {}),
         ("post", f"/caregivers/{uuid4()}/session", {}),
-        ("post", "/stories/generate", {}),
         ("get", f"/caregivers/{uuid4()}/dashboard", {}),
     ]
 

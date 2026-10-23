@@ -1,6 +1,6 @@
 from fastapi import FastAPI
-
 from fastapi.middleware.cors import CORSMiddleware
+
 from app.api.routes.caregivers import router as caregivers_router
 from app.api.routes.children import router as children_router
 from app.api.routes.dashboard import router as dashboard_router

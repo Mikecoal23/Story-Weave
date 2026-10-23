@@ -40,6 +40,19 @@ def _build_user_prompt(
     return prompt
 
 
+def _extract_json_object(raw_text: str) -> str:
+    """The JSON object inside a model reply.
+
+    Haiku wraps its JSON in a ```json fence despite the prompt, so take everything from the
+    first `{` to the last `}`. A reply with no braces is passed through unchanged and fails
+    in `json.loads`, which the pipeline counts as a bad reply.
+    """
+    start, end = raw_text.find("{"), raw_text.rfind("}")
+    if start == -1 or end < start:
+        return raw_text
+    return raw_text[start : end + 1]
+
+
 def generate_story_draft(
     patterns: Sequence[PhonicsPattern],
     interests: tuple[str, ...],
@@ -62,7 +75,7 @@ def generate_story_draft(
         ],
     )
     raw_text = message.content[0].text
-    data = json.loads(raw_text)
+    data = json.loads(_extract_json_object(raw_text))
     return DraftStory(
         title=data["title"],
         theme=data["theme"],

@@ -4,7 +4,6 @@ import pytest
 from pydantic import ValidationError
 
 from app.schemas.difficulty import DifficultyTarget
-from app.services.difficulty import select_difficulty_target
 
 
 def make_target() -> DifficultyTarget:
@@ -29,9 +28,3 @@ def test_difficulty_target_rejects_non_integer_pattern_ids() -> None:
             reinforce_pattern_ids=("digraph_sh",),  # type: ignore[arg-type]
             stretch_pattern_ids=(),
         )
-
-
-def test_select_difficulty_target_is_a_stub() -> None:
-    # The stub never touches the session, so None is fine here.
-    with pytest.raises(NotImplementedError):
-        select_difficulty_target(None, uuid4())  # type: ignore[arg-type]
