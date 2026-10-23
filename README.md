@@ -21,8 +21,8 @@ One reading session, step by step, and where each step lives in the code:
 
 ## What works today
 
-- **Working:** the whole backend loop above, against a real database, Azure Speech and Claude.
-- **In progress:** connecting the interface to it. The screens are built, but story generation in the UI still uses sample data.
+- **Working:** the whole loop above, in the browser, against a real database, Azure Speech and Claude. After a child reads a line, each word turns mint (read well) or coral (try again).
+- **Still sample data:** the parent dashboard. Login (`admin` / `123`) and the PINs (`1234`) are placeholders until Sprint 3.
 - **Known limitation:** Claude almost always uses words outside our vocabulary, so for now nearly every child gets one of the pre-written stories. Fixing that is the first generation task in Sprint 3.
 
 ## What's in the repo
@@ -111,7 +111,7 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173`. Which parts use real data and which use sample data is set by `USE_MOCKS` in `frontend/src/api/config.ts`.
+Open `http://localhost:5173` and log in with `admin` / `123`. Choose **Child → Mia**, enter PIN `1234` and press Start. The story takes a few seconds while Claude is asked. Click the mic, read the line, then click again to stop; the words change colour once the line is scored. Which parts use real data and which use sample data is set by `USE_MOCKS` in `frontend/src/api/config.ts`.
 
 
 
