@@ -204,6 +204,11 @@ def process_line_score(
         if pattern_id is not None:
             vocabulary_by_word[vocabulary_word.word][1].add(pattern_id)
 
+    # Mastery rows touched in this call. With autoflush off, `session.get` can't see a row
+    # added earlier in the same call, so a second word with the same pattern would insert a
+    # duplicate (child_id, phonics_pattern_id) row.
+    mastery_by_pattern: dict[int, PhonicsMastery] = {}
+
     for word_index, word_score in enumerate(score_result.words, start=1):
         word_key = _normalize_scored_word(word_score.expected_word)
         vocabulary_entry = vocabulary_by_word.get(word_key)
@@ -228,7 +233,7 @@ def process_line_score(
             continue
 
         for pattern_id in pattern_ids:
-            mastery = session.get(
+            mastery = mastery_by_pattern.get(pattern_id) or session.get(
                 PhonicsMastery,
                 (reading_session.child_id, pattern_id),
             )
@@ -241,6 +246,7 @@ def process_line_score(
                     correct_count=0,
                 )
                 session.add(mastery)
+            mastery_by_pattern[pattern_id] = mastery
 
             mastery.attempts_count += 1
             if word_score.status == "mastered":
