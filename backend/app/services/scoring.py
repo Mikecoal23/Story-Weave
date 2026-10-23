@@ -82,9 +82,8 @@ def score_line_audio(audio_bytes: bytes, expected_line: str) -> ScoreResult:
         if result.reason != speechsdk.ResultReason.RecognizedSpeech:
             raise RuntimeError(f"Unexpected Azure Speech result: {result.reason}")
 
-        result_json = result.properties.get_property(
-            speechsdk.PropertyId.SpeechServiceResponse_JsonResult
-        )
+        # `result.properties` is a plain dict in the Python SDK (not a PropertyCollection).
+        result_json = result.properties[speechsdk.PropertyId.SpeechServiceResponse_JsonResult]
         return _parse_azure_assessment(result_json, expected_line)
 
 
@@ -93,35 +92,39 @@ def _convert_to_wav(audio_bytes: bytes) -> bytes:
     if ffmpeg is None:
         raise RuntimeError("FFmpeg is required to convert uploaded audio for Azure Speech")
 
-    try:
-        result = subprocess.run(
-            [
-                ffmpeg,
-                "-hide_banner",
-                "-loglevel",
-                "error",
-                "-i",
-                "pipe:0",
-                "-ac",
-                "1",
-                "-ar",
-                "16000",
-                "-c:a",
-                "pcm_s16le",
-                "-f",
-                "wav",
-                "pipe:1",
-            ],
-            input=audio_bytes,
-            capture_output=True,
-            timeout=30,
-            check=False,
-        )
-    except subprocess.TimeoutExpired as error:
-        raise TimeoutError("Audio conversion exceeded 30 seconds") from error
-    if result.returncode != 0:
-        raise ValueError("Could not decode uploaded audio")
-    return result.stdout
+    # FFmpeg writes the WAV to a file, not to a pipe: a pipe can't be seeked, so the header
+    # would claim an unknown (2**31 - 1 frame) length and the duration check would reject
+    # every recording.
+    with tempfile.TemporaryDirectory() as temp_dir:
+        source_path = Path(temp_dir) / "input"
+        wav_path = Path(temp_dir) / "output.wav"
+        source_path.write_bytes(audio_bytes)
+        try:
+            result = subprocess.run(
+                [
+                    ffmpeg,
+                    "-hide_banner",
+                    "-loglevel",
+                    "error",
+                    "-i",
+                    str(source_path),
+                    "-ac",
+                    "1",
+                    "-ar",
+                    "16000",
+                    "-c:a",
+                    "pcm_s16le",
+                    str(wav_path),
+                ],
+                capture_output=True,
+                timeout=30,
+                check=False,
+            )
+        except subprocess.TimeoutExpired as error:
+            raise TimeoutError("Audio conversion exceeded 30 seconds") from error
+        if result.returncode != 0:
+            raise ValueError("Could not decode uploaded audio")
+        return wav_path.read_bytes()
 
 
 def _parse_azure_assessment(result_json: str, expected_line: str) -> ScoreResult:
