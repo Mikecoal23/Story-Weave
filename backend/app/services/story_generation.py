@@ -7,6 +7,15 @@ from app.core.config import settings
 from app.models.entities import PhonicsPattern
 from app.schemas.stories import DraftStory
 
+# A live call takes about 2 s (measured 2026-10-23). The SDK default is a 600 s read timeout
+# plus 2 hidden retries; the pipeline already retries, so the SDK must not.
+_REQUEST_TIMEOUT_SECONDS = 15.0
+
+
+class LLMNotConfiguredError(RuntimeError):
+    """ANTHROPIC_API_KEY is not set, so no draft can be requested."""
+
+
 _SYSTEM_PROMPT = """You write short decodable stories for children in grades 1-3 learning to read.
 
 Rules:
@@ -62,7 +71,14 @@ def generate_story_draft(
     """Ask the LLM for one story draft. Not validated against the vocabulary --
     that's the validator's job (see story_pipeline). `feedback` is why the previous
     draft was rejected, appended to the prompt on a retry."""
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+    if not settings.anthropic_api_key:
+        # Without this the SDK raises a bare TypeError, which looks like a bad reply.
+        raise LLMNotConfiguredError("ANTHROPIC_API_KEY is not set in backend/.env")
+    client = anthropic.Anthropic(
+        api_key=settings.anthropic_api_key,
+        timeout=_REQUEST_TIMEOUT_SECONDS,
+        max_retries=0,
+    )
     message = client.messages.create(
         model=settings.anthropic_story_model,
         max_tokens=1024,

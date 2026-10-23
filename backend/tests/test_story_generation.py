@@ -3,8 +3,15 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from app.core.config import settings
 from app.models.entities import PhonicsPattern
-from app.services.story_generation import generate_story_draft
+from app.services.story_generation import LLMNotConfiguredError, generate_story_draft
+
+
+@pytest.fixture(autouse=True)
+def api_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    # The SDK is mocked; a key only has to be present, whatever backend/.env holds.
+    monkeypatch.setattr(settings, "anthropic_api_key", "test-key")
 
 
 def make_pattern(code: str, label: str, example_words: list[str]) -> PhonicsPattern:
@@ -119,3 +126,27 @@ def test_generate_story_draft_includes_retry_feedback_in_the_prompt(
     user_content = kwargs["messages"][0]["content"]
     assert "previous attempt was rejected" in user_content
     assert "dragon" in user_content
+
+
+@patch("app.services.story_generation.anthropic.Anthropic")
+def test_the_client_has_a_short_timeout_and_no_sdk_retries(mock_anthropic_cls: MagicMock) -> None:
+    mock_anthropic_cls.return_value.messages.create.return_value = fake_response(
+        {"title": "T", "theme": "t", "lines": ["One."]}
+    )
+
+    generate_story_draft([make_pattern("digraph_sh", "SH", ["ship"])], (), frozenset({"one"}))
+
+    _, kwargs = mock_anthropic_cls.call_args
+    assert kwargs["timeout"] <= 30
+    assert kwargs["max_retries"] == 0  # the pipeline does the retrying
+
+
+@patch("app.services.story_generation.anthropic.Anthropic")
+def test_a_missing_api_key_raises_before_any_call(
+    mock_anthropic_cls: MagicMock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(settings, "anthropic_api_key", None)
+
+    with pytest.raises(LLMNotConfiguredError):
+        generate_story_draft([make_pattern("digraph_sh", "SH", ["ship"])], (), frozenset({"a"}))
+    mock_anthropic_cls.assert_not_called()

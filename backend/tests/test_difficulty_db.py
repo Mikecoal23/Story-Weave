@@ -7,12 +7,10 @@ test_difficulty.py always run.
 from collections.abc import Generator
 
 import pytest
-from sqlalchemy import select, text
-from sqlalchemy.engine import make_url
-from sqlalchemy.exc import OperationalError
+from sqlalchemy import select
 from sqlalchemy.orm import Session
+from support import throwaway_schema
 
-from app.db.session import engine
 from app.models import (
     Caregiver,
     Child,
@@ -22,7 +20,6 @@ from app.models import (
     VocabularyWordPattern,
 )
 from app.services.difficulty import select_difficulty_target
-from scripts.seed_vocabulary import LOCAL_HOSTS, seed
 
 # The seed also writes vocabulary rows, so those tables are created too.
 TABLES = [
@@ -37,28 +34,10 @@ TABLES = [
 
 @pytest.fixture
 def db() -> Generator[Session, None, None]:
-    """A throwaway schema holding the real seeded patterns, rolled back afterwards."""
-    if make_url(str(engine.url)).host not in LOCAL_HOSTS:
-        pytest.skip("difficulty DB tests only run against a local database")
-    try:
-        connection = engine.connect()
-    except OperationalError:
-        pytest.skip(
-            "local Postgres is not running (docker compose up -d db): "
-            "select_difficulty_target was NOT tested against a real schema"
-        )
-    transaction = connection.begin()
-    try:
-        connection.execute(text("CREATE SCHEMA difficulty_test"))
-        connection.execute(text("SET LOCAL search_path TO difficulty_test"))
-        for table in TABLES:
-            table.create(connection, checkfirst=False)
-        with Session(bind=connection) as session:
-            seed(session)
-            yield session
-    finally:
-        transaction.rollback()
-        connection.close()
+    with throwaway_schema(
+        "difficulty_test", TABLES, not_tested="select_difficulty_target"
+    ) as session:
+        yield session
 
 
 def make_child(db: Session) -> Child:

@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models import VocabularyWord
-from app.schemas.stories import DraftStory, FallbackStoryTemplate
+from app.schemas.stories import DraftStory
 from scripts.seed_data import normalize_word
 
 # A token is a run of letters/digits, optionally joined by single inner apostrophes
@@ -46,9 +46,7 @@ def load_allowed_vocabulary(db: Session) -> frozenset[str]:
     return frozenset(db.scalars(select(VocabularyWord.word)))
 
 
-def validate_story(
-    story: DraftStory | FallbackStoryTemplate, allowed: frozenset[str]
-) -> ValidationResult:
+def validate_story(story: DraftStory, allowed: frozenset[str]) -> ValidationResult:
     """Reject any story whose title or lines contain a word outside `allowed`.
 
     The title is checked too, since the child may read it. Pure function: the caller

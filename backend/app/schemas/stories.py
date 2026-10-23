@@ -5,12 +5,11 @@ from pydantic import BaseModel, ConfigDict
 
 
 class DraftStory(BaseModel):
-    """What `generate_story_draft(...)` hands back, before validation.
+    """A story before it is validated: what `generate_story_draft(...)` hands back.
 
-    Same shape as `FallbackStoryTemplate` on purpose: the controlled-vocabulary
-    validator and the eventual `Story`/`StoryLine` persistence both consume
-    either one identically, so the regenerate/fallback paths don't need to
-    branch on which kind of story they're holding.
+    `pattern_codes` are the `phonics_pattern.code` values the story is meant to practice.
+    The validator, the pipeline and `save_validated_story` treat an LLM draft and a
+    fallback template identically, because a template is a `DraftStory` too.
     """
 
     model_config = ConfigDict(frozen=True)
@@ -21,21 +20,11 @@ class DraftStory(BaseModel):
     lines: tuple[str, ...]
 
 
-class FallbackStoryTemplate(BaseModel):
-    """A pre-authored, guaranteed-valid story used when the LLM + validator
-    loop in `generate_story_draft(...)` rejects N drafts in a row.
-
-    `pattern_codes` are `phonics_pattern.code` values the story is meant to
-    reinforce — not validated against the DB here, since the fallback path
-    must work even if a lookup fails.
+class FallbackStoryTemplate(DraftStory):
+    """A pre-authored story (app/services/story_templates.py) that the pipeline serves
+    when no LLM draft passes validation. Its `pattern_codes` are not checked against the
+    DB here, so the fallback path works even if a lookup fails.
     """
-
-    model_config = ConfigDict(frozen=True)
-
-    title: str
-    theme: str
-    pattern_codes: tuple[str, ...]
-    lines: tuple[str, ...]
 
 
 class StoryResponse(BaseModel):
