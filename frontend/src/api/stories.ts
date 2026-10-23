@@ -14,14 +14,15 @@ const mockStory: Story = {
   ],
 }
 
-// _childId is unused by the mock but kept so the signature matches the real route
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function generateStory(_childId: string): Promise<Story> {
+export async function generateStory(childId: string): Promise<Story> {
   if (USE_MOCKS.stories) {
     await delay(2000) // same wait as the old LoadingScreen timer
     return mockStory
   }
-  throw new Error('POST /stories/generate request body is not defined by the backend yet')
+  return request<Story>('/stories/generate', {
+    method: 'POST',
+    body: JSON.stringify({ child_id: childId }), // backend expects snake_case
+  })
 }
 
 export async function getStory(id: string): Promise<Story> {

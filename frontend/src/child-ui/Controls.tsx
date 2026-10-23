@@ -1,14 +1,16 @@
 import { useState } from 'react'
 import { uploadLineAudio } from '../api/sessions'
+import type { WordScore } from '../api/types'
 import { useRecorder } from './useRecorder'
 
 type Props = {
   sessionId: string | null
   lineNumber: number // 1-based, as the backend expects
+  onScored: (scores: WordScore[]) => void
   onNext: () => void
 }
 
-function Controls({ sessionId, lineNumber, onNext }: Props) {
+function Controls({ sessionId, lineNumber, onScored, onNext }: Props) {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
 
@@ -18,7 +20,8 @@ function Controls({ sessionId, lineNumber, onNext }: Props) {
     setUploading(true)
     setError('')
     try {
-      await uploadLineAudio(sessionId, lineNumber, audio)
+      const response = await uploadLineAudio(sessionId, lineNumber, audio)
+      onScored(response.result?.words ?? [])
     } catch {
       setError("We couldn't check that line. Try again.")
     }

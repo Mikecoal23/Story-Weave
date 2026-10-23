@@ -19,17 +19,25 @@ function App() {
   const [childList, setChildList] = useState<Child[]>([])
   // The child who picked themselves; needed later for story generation and sessions
   const [child, setChild] = useState<Child | null>(null)
+  // Shown on the login screen when the children can't be loaded (e.g. backend not running)
+  const [loadError, setLoadError] = useState('')
 
   async function loadChildren() {
     setChildList(await getChildren())
   }
 
   async function handleLogin() {
-    await loadChildren()
+    try {
+      await loadChildren()
+    } catch {
+      setLoadError("Couldn't load your children. Is the backend running?")
+      return
+    }
+    setLoadError('')
     setScreen('entry')
   }
 
-  if (screen === 'login') return <LoginScreen onSuccess={handleLogin} />
+  if (screen === 'login') return <LoginScreen onSuccess={handleLogin} loadError={loadError} />
   if (screen === 'parentPin')
     return <PinScreen title="Enter parent PIN" expectedPin={PARENT_PIN} onSuccess={() => setScreen('parent')} />
   if (screen === 'parent') return <ParentDashboard childList={childList} onChildAdded={loadChildren} onLogout={() => setScreen('login')} />
