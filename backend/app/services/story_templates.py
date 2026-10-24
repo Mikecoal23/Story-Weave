@@ -1,75 +1,11 @@
-import re
-
 from app.schemas.stories import FallbackStoryTemplate
 
-# The seeded `vocabulary_word` table doesn't exist yet (blocked on the team's
-# phonics-pattern ratification session), so these templates are drafted against
-# the starter set documented in sprint1_phonics_pattern_starter_set.md instead.
-# They are NOT yet validated against the real controlled vocabulary -- re-check
-# every word below once vocabulary_word is seeded (planning.md Decisions Log,
-# 2026-10-07).
-
-# sprint1_phonics_pattern_starter_set.md Section 1, "Example words" column.
-STARTER_PATTERN_WORDS = frozenset(
-    {
-        "ship",
-        "wish",  # digraph_sh
-        "chip",
-        "much",  # digraph_ch
-        "this",
-        "bath",  # digraph_th
-        "blue",
-        "black",  # blend_bl
-        "clap",
-        "clock",  # blend_cl
-        "frog",
-        "from",  # blend_fr
-        "cake",
-        "name",  # silent_e_a
-        "rain",
-        "play",  # vowel_team_ai_ay
-        "jump",
-        "lamp",  # final_blend_mp
-    }
-)
-
-# sprint1_phonics_pattern_starter_set.md Section 2.
-STARTER_SIGHT_WORDS = frozenset({"said", "they", "of", "the", "was", "to", "you"})
-
-# Basic function/verb words needed to make grammatical sentences out of the
-# starter set above. None of these are in sprint1_phonics_pattern_starter_set.md
-# yet -- flagged in planning.md as an additional ask for the ratification
-# session, not assumed on the team's behalf.
-DRAFT_GLUE_WORDS = frozenset(
-    {
-        "a",
-        "after",
-        "and",
-        "ate",
-        "by",
-        "can",
-        "fell",
-        "fun",
-        "go",
-        "had",
-        "has",
-        "i",
-        "in",
-        "is",
-        "like",
-        "sat",
-    }
-)
-
-ALLOWED_DRAFT_WORDS = STARTER_PATTERN_WORDS | STARTER_SIGHT_WORDS | DRAFT_GLUE_WORDS
-
-_WORD_RE = re.compile(r"[a-z']+")
-
-
-def words_in(text: str) -> set[str]:
-    return set(_WORD_RE.findall(text.lower()))
-
-
+# Pre-authored stories the pipeline serves when no LLM draft passes validation
+# (app.services.story_pipeline). Every word must be in the seeded vocabulary:
+# tests/test_seed_data.py checks them against the seed data and
+# tests/test_vocabulary_validator_db.py runs the real validator on the seeded tables.
+# `pattern_codes` are what each story practices; the pipeline picks the template sharing
+# the most codes with the child's target patterns.
 FALLBACK_TEMPLATES: tuple[FallbackStoryTemplate, ...] = (
     FallbackStoryTemplate(
         title="Ship Wish",
