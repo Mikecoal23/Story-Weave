@@ -10,9 +10,9 @@ from app.schemas.children import ChildResponse
 
 router = APIRouter()
 
-# Route stubs for the team's REST contract (planning.md, Stage 1). Every route returns
-# 501 until its Stage 2 implementation lands. Request/response bodies are NOT specified
-# yet except where planning.md says so, so they are deliberately left off these stubs.
+# The two 501 stubs below are caregiver creation and login, scheduled for Sprint 3 with the
+# login model (planning.md, Open Question 12). Until then the dev fixtures script supplies
+# a caregiver id. Their request/response bodies are not specified yet, so none are invented.
 
 
 @router.post("/caregivers")

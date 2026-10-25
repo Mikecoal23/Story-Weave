@@ -8,46 +8,26 @@ validator tests in test_vocabulary_validator.py always run.
 from collections.abc import Generator
 
 import pytest
-from sqlalchemy import text
-from sqlalchemy.engine import make_url
-from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
+from support import throwaway_schema
 
-from app.db.session import engine
 from app.models import PhonicsPattern, VocabularyWord, VocabularyWordPattern
 from app.schemas.stories import DraftStory
 from app.services.story_templates import FALLBACK_TEMPLATES
 from app.services.vocabulary_validator import load_allowed_vocabulary, validate_story
 from scripts.seed_data import build_words
-from scripts.seed_vocabulary import LOCAL_HOSTS, seed
 
 TABLES = [PhonicsPattern.__table__, VocabularyWord.__table__, VocabularyWordPattern.__table__]
 
 
 @pytest.fixture
 def seeded_session() -> Generator[Session, None, None]:
-    """A throwaway schema, seeded with the real seed data, rolled back afterwards."""
-    if make_url(str(engine.url)).host not in LOCAL_HOSTS:
-        pytest.skip("vocabulary DB tests only run against a local database")
-    try:
-        connection = engine.connect()
-    except OperationalError:
-        pytest.skip(
-            "local Postgres is not running (docker compose up -d db): "
-            "fallback templates were NOT validated against the seeded vocabulary"
-        )
-    transaction = connection.begin()
-    try:
-        connection.execute(text("CREATE SCHEMA validator_test"))
-        connection.execute(text("SET LOCAL search_path TO validator_test"))
-        for table in TABLES:
-            table.create(connection, checkfirst=False)
-        with Session(bind=connection) as db:
-            seed(db)
-            yield db
-    finally:
-        transaction.rollback()
-        connection.close()
+    with throwaway_schema(
+        "validator_test",
+        TABLES,
+        not_tested="the fallback templates against the seeded vocabulary",
+    ) as session:
+        yield session
 
 
 def test_allowed_vocabulary_is_every_seeded_word(seeded_session: Session) -> None:

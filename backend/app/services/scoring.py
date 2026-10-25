@@ -82,9 +82,8 @@ def score_line_audio(audio_bytes: bytes, expected_line: str) -> ScoreResult:
         if result.reason != speechsdk.ResultReason.RecognizedSpeech:
             raise RuntimeError(f"Unexpected Azure Speech result: {result.reason}")
 
-        result_json = result.properties.get_property(
-            speechsdk.PropertyId.SpeechServiceResponse_JsonResult
-        )
+        # `result.properties` is a plain dict in the Python SDK (not a PropertyCollection).
+        result_json = result.properties[speechsdk.PropertyId.SpeechServiceResponse_JsonResult]
         return _parse_azure_assessment(result_json, expected_line)
 
 
@@ -93,35 +92,39 @@ def _convert_to_wav(audio_bytes: bytes) -> bytes:
     if ffmpeg is None:
         raise RuntimeError("FFmpeg is required to convert uploaded audio for Azure Speech")
 
-    try:
-        result = subprocess.run(
-            [
-                ffmpeg,
-                "-hide_banner",
-                "-loglevel",
-                "error",
-                "-i",
-                "pipe:0",
-                "-ac",
-                "1",
-                "-ar",
-                "16000",
-                "-c:a",
-                "pcm_s16le",
-                "-f",
-                "wav",
-                "pipe:1",
-            ],
-            input=audio_bytes,
-            capture_output=True,
-            timeout=30,
-            check=False,
-        )
-    except subprocess.TimeoutExpired as error:
-        raise TimeoutError("Audio conversion exceeded 30 seconds") from error
-    if result.returncode != 0:
-        raise ValueError("Could not decode uploaded audio")
-    return result.stdout
+    # FFmpeg writes the WAV to a file, not to a pipe: a pipe can't be seeked, so the header
+    # would claim an unknown (2**31 - 1 frame) length and the duration check would reject
+    # every recording.
+    with tempfile.TemporaryDirectory() as temp_dir:
+        source_path = Path(temp_dir) / "input"
+        wav_path = Path(temp_dir) / "output.wav"
+        source_path.write_bytes(audio_bytes)
+        try:
+            result = subprocess.run(
+                [
+                    ffmpeg,
+                    "-hide_banner",
+                    "-loglevel",
+                    "error",
+                    "-i",
+                    str(source_path),
+                    "-ac",
+                    "1",
+                    "-ar",
+                    "16000",
+                    "-c:a",
+                    "pcm_s16le",
+                    str(wav_path),
+                ],
+                capture_output=True,
+                timeout=30,
+                check=False,
+            )
+        except subprocess.TimeoutExpired as error:
+            raise TimeoutError("Audio conversion exceeded 30 seconds") from error
+        if result.returncode != 0:
+            raise ValueError("Could not decode uploaded audio")
+        return wav_path.read_bytes()
 
 
 def _parse_azure_assessment(result_json: str, expected_line: str) -> ScoreResult:
@@ -201,6 +204,11 @@ def process_line_score(
         if pattern_id is not None:
             vocabulary_by_word[vocabulary_word.word][1].add(pattern_id)
 
+    # Mastery rows touched in this call. With autoflush off, `session.get` can't see a row
+    # added earlier in the same call, so a second word with the same pattern would insert a
+    # duplicate (child_id, phonics_pattern_id) row.
+    mastery_by_pattern: dict[int, PhonicsMastery] = {}
+
     for word_index, word_score in enumerate(score_result.words, start=1):
         word_key = _normalize_scored_word(word_score.expected_word)
         vocabulary_entry = vocabulary_by_word.get(word_key)
@@ -225,7 +233,7 @@ def process_line_score(
             continue
 
         for pattern_id in pattern_ids:
-            mastery = session.get(
+            mastery = mastery_by_pattern.get(pattern_id) or session.get(
                 PhonicsMastery,
                 (reading_session.child_id, pattern_id),
             )
@@ -238,6 +246,7 @@ def process_line_score(
                     correct_count=0,
                 )
                 session.add(mastery)
+            mastery_by_pattern[pattern_id] = mastery
 
             mastery.attempts_count += 1
             if word_score.status == "mastered":

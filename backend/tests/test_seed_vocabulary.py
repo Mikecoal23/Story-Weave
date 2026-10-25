@@ -1,45 +1,25 @@
 from collections.abc import Generator
 
 import pytest
-from sqlalchemy import func, select, text
-from sqlalchemy.engine import make_url
-from sqlalchemy.exc import OperationalError
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
+from support import throwaway_schema
 
-from app.db.session import engine
 from app.models import PhonicsPattern, VocabularyWord, VocabularyWordPattern
 from scripts import seed_data, seed_vocabulary
 from scripts.seed_data import PATTERNS, build_words
-from scripts.seed_vocabulary import LOCAL_HOSTS, seed
+from scripts.seed_vocabulary import seed
 
 TABLES = [PhonicsPattern.__table__, VocabularyWord.__table__, VocabularyWordPattern.__table__]
 
 
 @pytest.fixture
 def session() -> Generator[Session, None, None]:
-    """A session on a throwaway schema inside a transaction that is always rolled back.
-
-    The three seed tables are created fresh in that schema, so the test is independent
-    of whatever is (or isn't) already seeded, and never touches real data. Tests must
-    not run against a shared database (planning.md, 2026-10-09), so non-local hosts skip.
-    """
-    if make_url(str(engine.url)).host not in LOCAL_HOSTS:
-        pytest.skip("seed tests only run against a local database")
-    try:
-        connection = engine.connect()
-    except OperationalError:
-        pytest.skip("local Postgres is not running (docker compose up -d db)")
-    transaction = connection.begin()
-    try:
-        connection.execute(text("CREATE SCHEMA seed_test"))
-        connection.execute(text("SET LOCAL search_path TO seed_test"))
-        for table in TABLES:
-            table.create(connection, checkfirst=False)
-        with Session(bind=connection) as db:
-            yield db
-    finally:
-        transaction.rollback()
-        connection.close()
+    """Empty seed tables in a throwaway schema, so each test runs the seed itself."""
+    with throwaway_schema(
+        "seed_test", TABLES, not_tested="scripts.seed_vocabulary", seeded=False
+    ) as db:
+        yield db
 
 
 def count(session: Session, model) -> int:

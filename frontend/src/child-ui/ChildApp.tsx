@@ -7,7 +7,7 @@ import TopBar from './TopBar'
 import SentenceReader from './SentenceReader'
 import Controls from './Controls'
 import { startSession } from '../api/sessions'
-import type { Child, Story } from '../api/types'
+import type { Child, Story, WordScore } from '../api/types'
 
 type Screen = 'pick' | 'loading' | 'reader' | 'finished'
 
@@ -21,6 +21,8 @@ function ChildApp({ child, onSwitchReader }: Props) {
   // The story the backend generated, and which of its lines is on screen
   const [story, setStory] = useState<Story | null>(null)
   const [lineIndex, setLineIndex] = useState(0)
+  // How each word of the current line was read; null until the line has been scored
+  const [scores, setScores] = useState<WordScore[] | null>(null)
 
   // The reading session the audio uploads belong to
   const [sessionId, setSessionId] = useState<string | null>(null)
@@ -29,6 +31,7 @@ function ChildApp({ child, onSwitchReader }: Props) {
   async function handleStory(newStory: Story) {
     setStory(newStory)
     setLineIndex(0)
+    setScores(null)
     setSessionId(null)
     setSessionError(false)
     setScreen('reader')
@@ -41,6 +44,7 @@ function ChildApp({ child, onSwitchReader }: Props) {
   }
 
   function handleNext() {
+    setScores(null)
     if (story && lineIndex + 1 < story.lines.length) setLineIndex(lineIndex + 1)
     else setScreen('finished')
   }
@@ -63,9 +67,14 @@ function ChildApp({ child, onSwitchReader }: Props) {
         current={lineIndex + 1}
         total={story?.lines.length ?? 1}
       />
-      <SentenceReader line={story?.lines[lineIndex] ?? ''} />
+      <SentenceReader line={story?.lines[lineIndex] ?? ''} scores={scores} />
       {sessionError && <p>We couldn't start your reading session. Try again.</p>}
-      <Controls sessionId={sessionId} lineNumber={lineIndex + 1} onNext={handleNext} />
+      <Controls
+        sessionId={sessionId}
+        lineNumber={lineIndex + 1}
+        onScored={setScores}
+        onNext={handleNext}
+      />
     </main>
   )
 }

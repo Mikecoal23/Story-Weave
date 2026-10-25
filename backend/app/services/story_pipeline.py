@@ -6,11 +6,15 @@ import anthropic
 from app.core.config import settings
 from app.models.entities import PhonicsPattern
 from app.schemas.stories import DraftStory, FallbackStoryTemplate, ValidatedStory
-from app.services.story_generation import generate_story_draft
+from app.services.story_generation import LLMNotConfiguredError, generate_story_draft
 from app.services.story_templates import FALLBACK_TEMPLATES
 from app.services.vocabulary_validator import validate_story
 
 logger = logging.getLogger(__name__)
+
+# Column sizes in app/models/entities.py: a longer value would fail the INSERT (HTTP 500).
+MAX_TITLE_LENGTH = 200  # story.title
+MAX_THEME_LENGTH = 120  # story.theme
 
 # A malformed or incomplete LLM reply (bad JSON, missing keys, wrong types).
 _BAD_REPLY_ERRORS = (ValueError, KeyError, IndexError, TypeError)
@@ -36,6 +40,23 @@ def _unknown_words_feedback(unknown_words: tuple[str, ...]) -> str:
     )
 
 
+def shape_problem(draft: DraftStory) -> str | None:
+    """Why a draft can't be saved or read as a story, as feedback for the model; None if fine.
+
+    Checks only what would break: no lines, a blank line, a missing or over-long title, an
+    over-long theme. The 6-8 line count the prompt asks for is not enforced.
+    """
+    if not draft.lines:
+        return "The story had no lines. Write 6-8 lines."
+    if any(not line.strip() for line in draft.lines):
+        return "One of the lines was empty. Every line must be a sentence."
+    if not draft.title.strip() or len(draft.title) > MAX_TITLE_LENGTH:
+        return f"The title must be 1-{MAX_TITLE_LENGTH} characters."
+    if len(draft.theme) > MAX_THEME_LENGTH:
+        return f"The theme must be at most {MAX_THEME_LENGTH} characters."
+    return None
+
+
 def rank_fallback_templates(pattern_codes: Sequence[str]) -> list[FallbackStoryTemplate]:
     """Fallback templates ordered by how many target pattern codes they share, most first.
 
@@ -58,9 +79,10 @@ def generate_validated_story(
     """Return a story whose every word is in `allowed`; a session never dead-ends.
 
     Asks the LLM for up to `max_attempts` drafts (default `settings.story_max_attempts`),
-    feeding the rejected words back each time. A draft that fails validation, a reply
-    that can't be parsed, and an Anthropic API error each use up one attempt. After the
-    last rejection, the best-matching fallback template that validates is returned.
+    feeding the rejected words back each time. A draft that fails validation, a draft with
+    a broken shape (`shape_problem`), a reply that can't be parsed, an Anthropic API error
+    and a missing API key each use up one attempt. After the last rejection, the
+    best-matching fallback template that validates is returned.
     """
     attempts = max_attempts if max_attempts is not None else settings.story_max_attempts
     feedback: str | None = None
@@ -69,6 +91,8 @@ def generate_validated_story(
         draft: DraftStory | None = None
         try:
             draft = generate_story_draft(patterns, interests, allowed, feedback)
+        except LLMNotConfiguredError:
+            logger.warning("story attempt %d/%d: ANTHROPIC_API_KEY is not set", attempt, attempts)
         except anthropic.APIError:
             logger.warning("story attempt %d/%d: Anthropic API error", attempt, attempts)
         except _BAD_REPLY_ERRORS:
@@ -76,6 +100,11 @@ def generate_validated_story(
             feedback = _BAD_REPLY_FEEDBACK
 
         if draft is None:
+            continue
+        problem = shape_problem(draft)
+        if problem is not None:
+            logger.warning("story attempt %d/%d rejected: %s", attempt, attempts, problem)
+            feedback = f"Your story could not be used. {problem}"
             continue
         result = validate_story(draft, allowed)
         if result.is_valid:

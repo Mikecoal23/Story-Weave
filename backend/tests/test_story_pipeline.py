@@ -7,7 +7,10 @@ import pytest
 from app.core.config import settings
 from app.models.entities import PhonicsPattern
 from app.schemas.stories import DraftStory
+from app.services.story_generation import LLMNotConfiguredError
 from app.services.story_pipeline import (
+    MAX_THEME_LENGTH,
+    MAX_TITLE_LENGTH,
     NoValidStoryError,
     generate_validated_story,
     rank_fallback_templates,
@@ -131,6 +134,33 @@ def test_every_attempt_failing_with_api_errors_still_returns_a_story() -> None:
     error = anthropic.APIConnectionError(request=httpx.Request("POST", "https://example.test"))
     story, _ = run([error, error, error])
     assert story.source == "fallback"
+
+
+def test_a_missing_api_key_uses_every_attempt_then_falls_back() -> None:
+    missing = LLMNotConfiguredError("no key")
+    story, mock = run([missing, missing, missing])
+    assert (story.source, story.attempts) == ("fallback", 3)
+    assert mock.call_args_list[1].args[3] is None  # nothing to tell the model
+
+
+@pytest.mark.parametrize(
+    ("broken", "expected_feedback"),
+    [
+        (GOOD.model_copy(update={"lines": ()}), "no lines"),
+        (GOOD.model_copy(update={"lines": ("A frog sat.", "  ")}), "empty"),
+        (GOOD.model_copy(update={"title": " "}), "title"),
+        (GOOD.model_copy(update={"title": "a " * MAX_TITLE_LENGTH}), "title"),
+        (GOOD.model_copy(update={"theme": "x" * (MAX_THEME_LENGTH + 1)}), "theme"),
+    ],
+)
+def test_a_draft_that_cannot_be_saved_is_rejected_with_feedback(
+    broken: DraftStory, expected_feedback: str
+) -> None:
+    # Each of these passes the vocabulary check (no unknown words) but would save an empty
+    # story or fail the INSERT.
+    story, mock = run([broken, GOOD])
+    assert (story.source, story.attempts) == ("llm", 2)
+    assert expected_feedback in mock.call_args_list[1].args[3]
 
 
 def test_fallback_prefers_the_template_sharing_the_most_patterns() -> None:
