@@ -13,6 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.core.words import normalize_word
 from app.models import (
     PhonicsMastery,
     ReadingAttempt,
@@ -22,7 +23,6 @@ from app.models import (
     VocabularyWordPattern,
 )
 from app.schemas.scoring import ScoreResult, WordScore
-from scripts.seed_data import normalize_word
 
 
 def _normalize_scored_word(word: str) -> str:

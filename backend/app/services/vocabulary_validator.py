@@ -4,9 +4,9 @@ from dataclasses import dataclass
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.words import normalize_word
 from app.models import VocabularyWord
 from app.schemas.stories import DraftStory
-from scripts.seed_data import normalize_word
 
 # A token is a run of letters/digits, optionally joined by single inner apostrophes
 # ("don't", "it's"). Edge apostrophes (quotes, trailing possessives) are not part of a
