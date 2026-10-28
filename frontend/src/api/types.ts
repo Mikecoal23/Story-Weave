@@ -13,7 +13,7 @@ export type Child = {
 export type Story = {
   id: string
   title: string
-  theme: string
+  theme: string | null // nullable in the backend's story.theme
   lines: string[]
 }
 
