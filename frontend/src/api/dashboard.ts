@@ -2,8 +2,12 @@ import { USE_MOCKS } from './config'
 import { delay, request } from './client'
 import type { Dashboard } from './types'
 
+// Keyed by the fixture child ids (Mia, Leo) from backend/scripts/dev_fixtures.py
+const MIA_ID = 'f1000000-0000-4000-8000-0000000000a1'
+const LEO_ID = 'f1000000-0000-4000-8000-0000000000a2'
+
 const mockDashboards: Record<string, Dashboard> = {
-  '1': {
+  [MIA_ID]: {
     sessions: 3,
     minutes: 12,
     lastStory: 'The Shell on the Beach',
@@ -16,7 +20,7 @@ const mockDashboards: Record<string, Dashboard> = {
     ],
     tryAtHome: ['shop', 'shell', 'shed'],
   },
-  '2': {
+  [LEO_ID]: {
     sessions: 5,
     minutes: 20,
     lastStory: 'The Truck on the Moon',
@@ -35,7 +39,7 @@ export async function getDashboard(childId: string): Promise<Dashboard> {
   if (USE_MOCKS.dashboard) {
     await delay(300)
     // Children added in the app have no sample data, so they fall back to the first one
-    return mockDashboards[childId] ?? mockDashboards['1']
+    return mockDashboards[childId] ?? mockDashboards[MIA_ID]
   }
   return request<Dashboard>(`/caregivers/${childId}/dashboard`)
 }

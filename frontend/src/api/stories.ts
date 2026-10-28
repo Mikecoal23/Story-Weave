@@ -24,8 +24,3 @@ export async function generateStory(childId: string): Promise<Story> {
     body: JSON.stringify({ child_id: childId }), // backend expects snake_case
   })
 }
-
-export async function getStory(id: string): Promise<Story> {
-  if (USE_MOCKS.stories) return mockStory
-  return request<Story>(`/stories/${id}`)
-}

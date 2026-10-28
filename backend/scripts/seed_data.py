@@ -12,16 +12,7 @@ Dolch list (220 words) minus every Dolch word that is a pattern word.
 
 from dataclasses import dataclass
 
-
-def normalize_word(raw: str) -> str:
-    """Canonical form for a vocabulary word: trimmed, lowercase, straight apostrophe.
-
-    vocabulary_word has CHECK constraints for lowercase and trimmed. Curly apostrophes
-    are folded to ASCII so "don’t" from a transcript matches "don't" in the table, and
-    "I" is stored as "i". Anything that looks words up (e.g. scoring) must call this
-    first.
-    """
-    return raw.replace("’", "'").replace("‘", "'").strip().lower()
+from app.core.words import normalize_word
 
 
 @dataclass(frozen=True)
