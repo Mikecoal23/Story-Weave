@@ -3,7 +3,7 @@ import pytest
 from app.services.story_templates import FALLBACK_TEMPLATES
 from app.services.vocabulary_validator import tokenize
 from scripts import seed_data
-from scripts.seed_data import PATTERNS, WordSeed, build_words, normalize_word
+from scripts.seed_data import PATTERNS, WordSeed, add_ending, build_words, normalize_word
 
 
 def by_word() -> dict[str, WordSeed]:
@@ -119,4 +119,61 @@ def test_build_words_rejects_a_word_in_two_categories(monkeypatch: pytest.Monkey
 def test_build_words_rejects_unknown_pattern_code(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(seed_data, "PATTERN_WORDS", {"nope": ("ship",)})
     with pytest.raises(ValueError, match="unknown pattern codes"):
+        build_words()
+
+
+@pytest.mark.parametrize(
+    ("base", "ending", "expected"),
+    [
+        ("jump", "s", "jumps"),
+        ("wish", "s", "wishes"),
+        ("lunch", "s", "lunches"),
+        ("box", "s", "boxes"),
+        ("go", "s", "goes"),
+        ("carry", "s", "carries"),
+        ("play", "s", "plays"),
+        ("jump", "ed", "jumped"),
+        ("chase", "ed", "chased"),
+        ("carry", "ed", "carried"),
+        ("play", "ed", "played"),
+        ("clap", "ed", "clapped"),
+        ("open", "ed", "opened"),
+        ("wait", "ed", "waited"),
+        ("chase", "ing", "chasing"),
+        ("see", "ing", "seeing"),
+        ("run", "ing", "running"),
+        ("try", "ing", "trying"),
+        ("show", "ing", "showing"),
+    ],
+)
+def test_add_ending_follows_the_spelling_rules(base: str, ending: str, expected: str) -> None:
+    assert add_ending(base, ending) == expected
+
+
+def test_an_ending_form_keeps_its_base_words_category_and_tags() -> None:
+    words = by_word()
+    assert words["jumped"].pattern_codes == {"final_blend_mp"}
+    assert words["chasing"].pattern_codes == {"digraph_ch", "silent_e_a"}
+    assert words["looked"].is_sight_word and not words["looked"].pattern_codes
+    assert not words["dogs"].is_sight_word and not words["dogs"].pattern_codes
+
+
+def test_irregular_verbs_get_no_ed_form() -> None:
+    words = by_word()
+    assert "running" in words and "makes" in words
+    assert "runned" not in words and "maked" not in words
+
+
+def test_an_already_seeded_form_keeps_its_own_row() -> None:
+    # "does" and "goes" are Dolch sight words; "do" and "go" would generate them too.
+    words = by_word()
+    assert words["does"].is_sight_word
+    assert words["goes"].is_sight_word
+
+
+def test_build_words_rejects_an_ending_base_that_is_not_seeded(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(seed_data, "PLURAL_NOUNS", ("dinosaur",))
+    with pytest.raises(ValueError, match="ending base 'dinosaur'"):
         build_words()
