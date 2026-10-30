@@ -21,7 +21,7 @@ _SYSTEM_PROMPT = """You write short decodable stories for children in grades 1-3
 Rules:
 - Use ONLY words from the allowed vocabulary list. Never use a word that is not in that list.
 - Spell each word exactly as it is in the list. Do not add -s, -es, -ed or -ing unless that
-  exact form is in the list ("jump" is allowed, "jumped" is not).
+  exact form is in the list.
 - Do not give characters names. Call them by an allowed word, such as "the frog" or "the girl".
 - The child's interests are only a hint for the theme. Do not write an interest word unless it
   is in the list.
