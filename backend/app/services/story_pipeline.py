@@ -1,3 +1,4 @@
+import json
 import logging
 from collections.abc import Sequence
 
@@ -33,10 +34,18 @@ class NoValidStoryError(RuntimeError):
     """
 
 
-def _unknown_words_feedback(unknown_words: tuple[str, ...]) -> str:
+def _unknown_words_feedback(draft: DraftStory, unknown_words: tuple[str, ...]) -> str:
+    """Show the model its own draft and ask it to change only the rejected words.
+
+    Measured 2026-10-30: when asked to rewrite the whole story, each retry fixed the named
+    words but brought in new unknown ones, so the draft is sent back to be edited instead.
+    """
+    previous = json.dumps({"title": draft.title, "theme": draft.theme, "lines": list(draft.lines)})
     return (
         f"It used words that are not in the allowed vocabulary: {', '.join(unknown_words)}. "
-        "Rewrite the whole story using ONLY words from the allowed vocabulary list."
+        f"Here is that story: {previous} "
+        "Keep the story, but change the parts that use those words, using ONLY words from the "
+        "allowed vocabulary list. Do not bring in any other new words."
     )
 
 
@@ -115,7 +124,7 @@ def generate_validated_story(
             attempts,
             ", ".join(result.unknown_words),
         )
-        feedback = _unknown_words_feedback(result.unknown_words)
+        feedback = _unknown_words_feedback(draft, result.unknown_words)
 
     for template in rank_fallback_templates([pattern.code for pattern in patterns]):
         if validate_story(template, allowed).is_valid:
