@@ -7,9 +7,11 @@ or demoted between "sight word" and "pattern word".
 
 Sources: sprint1_phonics_pattern_starter_set.md (pattern metadata, sequence_order) and
 the ratified word table (planning.md Decisions Log, seeding entry). Sight words are the
-Dolch list (220 words) minus every Dolch word that is a pattern word.
+Dolch list (220 words) minus every Dolch word that is a pattern word. Word endings
+(-s/-es, -ed, -ing) are generated from the base-word lists below (2026-10-30).
 """
 
+import re
 from dataclasses import dataclass
 
 from app.core.words import normalize_word
@@ -115,6 +117,90 @@ NOUN_WORDS: tuple[str, ...] = (
     "milk nest pig sun toy tree"
 ).split()
 
+# Word endings (2026-10-30, Open Question 17): without them the LLM writes "the frog thank
+# the fish". Each form is seeded as its own row with its base word's category and pattern
+# tags, so scoring finds "jumped" and a miss on it counts against -MP, like "jump".
+# Takes -s/-es, -ed and -ing.
+REGULAR_VERBS: tuple[str, ...] = (
+    # pattern words
+    "ship shop wish rush mash wash fish show chop chat chase thank blink clap clip clean "
+    "name wait rain play stay jump bump pump dump camp mail tape "
+    # sight words
+    "look help like want ask walk stop open live call work pull use start pick carry laugh try"
+).split()
+# Takes -s/-es and -ing only: the past tense is irregular (ran, made, said), so it is seeded
+# as its own word or not at all.
+IRREGULAR_VERBS: tuple[str, ...] = (
+    "make take shake think say pay shut "  # pattern words
+    "run find come go do see eat ride get sit sing read tell sleep keep bring drink hold cut "
+    "fly give draw grow buy write know put fall hurt"  # sight words
+).split()
+# Takes -s/-es only.
+PLURAL_NOUNS: tuple[str, ...] = (
+    "shell dish chip moth path bath cake game gate lake tail day way lamp clock frog clam "
+    "club "  # pattern words
+    "ball bed bird box boy car cow dog door duck egg farm girl hand hill home house nest pig "
+    "toy tree"  # nouns
+).split()
+
+_VOWELS = "aeiou"
+
+
+def _doubles_final_consonant(base: str) -> bool:
+    """A one-vowel word ending consonant-vowel-consonant doubles its last letter: clapped."""
+    return (
+        len(re.findall(f"[{_VOWELS}]+", base)) == 1
+        and len(base) >= 3
+        and base[-1] not in _VOWELS + "wxy"
+        and base[-2] in _VOWELS
+        and base[-3] not in _VOWELS
+    )
+
+
+def add_ending(base: str, ending: str) -> str:
+    """Spell `base` + `ending` ("s", "ed" or "ing") with the regular spelling rules.
+
+    wish -> wishes, carry -> carries, chase -> chased, carry -> carried, chase -> chasing,
+    clap -> clapped / clapping.
+    """
+    consonant_y = base.endswith("y") and base[-2] not in _VOWELS
+    if ending == "s":
+        if base.endswith(("s", "sh", "ch", "x", "z", "o")):
+            return base + "es"
+        return base[:-1] + "ies" if consonant_y else base + "s"
+    if ending == "ed":
+        if base.endswith("e"):
+            return base + "d"
+        if consonant_y:
+            return base[:-1] + "ied"
+    elif base.endswith("e") and not base.endswith("ee"):
+        return base[:-1] + "ing"
+    if _doubles_final_consonant(base):
+        base += base[-1]
+    return base + ending
+
+
+def inflected_words(base_words: dict[str, WordSeed]) -> list[WordSeed]:
+    """The ending forms of the three lists above, each with its base word's category and tags.
+
+    A form that is already seeded (does, goes) is skipped, so its own row wins.
+    """
+    forms: dict[str, WordSeed] = {}
+    for bases, endings in (
+        (REGULAR_VERBS, ("s", "ed", "ing")),
+        (IRREGULAR_VERBS, ("s", "ing")),
+        (PLURAL_NOUNS, ("s",)),
+    ):
+        for base in bases:
+            seed = base_words.get(base)
+            if seed is None:
+                raise ValueError(f"ending base {base!r} is not a seeded word")
+            for ending in endings:
+                form = add_ending(base, ending)
+                if form not in base_words:
+                    forms[form] = WordSeed(form, seed.is_sight_word, seed.pattern_codes)
+    return list(forms.values())
+
 
 def build_words() -> list[WordSeed]:
     """Combine the lists above into validated WordSeed rows, sorted by word."""
@@ -149,6 +235,7 @@ def build_words() -> list[WordSeed]:
     words = [WordSeed(w, False, frozenset(codes)) for w, codes in tags.items()]
     words += [WordSeed(w, True, frozenset()) for w in sight]
     words += [WordSeed(w, False, frozenset()) for w in filler | nouns]
+    words += inflected_words({seed.word: seed for seed in words})
     for seed in words:
         if not seed.word or seed.word != normalize_word(seed.word):
             raise ValueError(f"word {seed.word!r} is not normalized")
