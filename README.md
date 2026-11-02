@@ -71,6 +71,14 @@ Then add your keys to `backend/.env`:
 |---|---|---|
 | `ANTHROPIC_API_KEY` | Claude writing stories | You always get a pre-written story |
 | `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION` | Scoring a read line | The audio route returns 502 |
+| `MERRIAM_WEBSTER_API_KEY` | Looking up word definitions, phonetics and pronunciation audio | Word lookup shows an error |
+
+Use a Merriam-Webster School Dictionary API key for `MERRIAM_WEBSTER_API_KEY`.
+The key is used only by the backend and must not be added to frontend environment
+variables or committed. In the reader, children can tap any word for its definition
+and phonetic spelling; after scoring, the first shaky or missed word is looked up
+automatically. The pronunciation button appears disabled when the dictionary entry
+doesn't include audio.
 
 ### 3. Load the vocabulary and demo data
 

@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes.caregivers import router as caregivers_router
 from app.api.routes.children import router as children_router
 from app.api.routes.dashboard import router as dashboard_router
+from app.api.routes.dictionary import router as dictionary_router
 from app.api.routes.health import router as health_router
 from app.api.routes.sessions import router as sessions_router
 from app.api.routes.stories import router as stories_router
@@ -23,3 +24,4 @@ app.include_router(children_router)
 app.include_router(sessions_router)
 app.include_router(stories_router)
 app.include_router(dashboard_router)
+app.include_router(dictionary_router)
