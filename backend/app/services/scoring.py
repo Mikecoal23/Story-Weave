@@ -46,7 +46,9 @@ def score_line_audio(audio_bytes: bytes, expected_line: str) -> ScoreResult:
 
     import azure.cognitiveservices.speech as speechsdk
 
-    with tempfile.TemporaryDirectory() as temp_dir:
+    # The Azure SDK can still hold audio.wav open when this block exits, and Windows refuses
+    # to delete an open file, so a failed cleanup must not turn a good score into a 500.
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as temp_dir:
         wav_path = Path(temp_dir) / "audio.wav"
         wav_path.write_bytes(wav_bytes)
         audio_config = speechsdk.audio.AudioConfig(filename=str(wav_path))

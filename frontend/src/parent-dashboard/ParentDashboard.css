@@ -191,6 +191,12 @@
   font-weight: 480;
 }
 
+.pd-bar-value {
+  width: 3rem;
+  text-align: right;
+  font-weight: 480;
+}
+
 .pd-bar-track {
   flex: 1;
   height: 14px;
@@ -224,6 +230,11 @@
   background: var(--pd-canvas);
   border: 1px solid var(--pd-hairline);
   border-radius: 50px;
+}
+
+/* Word chips are labels; only the "Mark as practiced" button is clickable */
+span.pd-chip {
+  cursor: default;
 }
 
 .pd-chips {

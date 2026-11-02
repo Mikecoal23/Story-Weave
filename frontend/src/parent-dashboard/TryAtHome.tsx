@@ -8,9 +8,9 @@ function TryAtHome({ words }: Props) {
       <h2 className="pd-heading">Try at home</h2>
       <div className="pd-chips">
         {words.map((word) => (
-          <button key={word} type="button" className="pd-chip">
+          <span key={word} className="pd-chip">
             {word}
-          </button>
+          </span>
         ))}
       </div>
     </section>

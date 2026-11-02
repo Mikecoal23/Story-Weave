@@ -60,40 +60,6 @@
   font-size: 1.4rem;
 }
 
-.start-stories {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 1.5rem;
-}
-
-.start-story {
-  padding: 2rem 1.5rem;
-  font: inherit;
-  font-size: clamp(1rem, 2vw, 1.4rem);
-  font-weight: 540;
-  color: #000;
-  background: #f4ecd6;
-  border: none;
-  border-radius: 24px;
-  box-shadow: 10px 10px 0 #000; /* hard offset, no blur, same as the entry blocks */
-  cursor: pointer;
-}
-
-.start-story:nth-child(2) {
-  background: #c8e6cd;
-}
-
-.start-story:nth-child(3) {
-  background: #efd4d4;
-}
-
-/* The chosen story looks pressed in: it moves into its shadow */
-.start-story.selected {
-  transform: translate(7px, 7px);
-  box-shadow: 3px 3px 0 #000;
-}
-
 /* White secondary pill (used by the finished screen) */
 .start-btn.secondary {
   color: #000;
