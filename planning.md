@@ -51,19 +51,19 @@ The whole path works in the browser on one machine: log in, pick a child, get a 
 |---|---|
 | Local setup | Docker Postgres and the FastAPI backend run together. `GET /health` returns `{"status":"ok"}` and `/docs` shows every route. |
 | Database | 13 tables at Alembic head `9cde937f7a48`, on local Docker and on Neon `dev`. Both hold the vocabulary seed (9 patterns, 316 words, 108 word-pattern links) and the dev fixtures (one caregiver, Mia, Leo and one story, with fixed ids). Neon `production` is untouched. |
-| API routes | Working: `GET /health`, `POST /children`, `GET /caregivers/{id}/children`, `POST /sessions`, `POST /sessions/{id}/lines/{n}/audio`, `POST /stories/generate`, `GET /stories/{id}`. Still 501 (Sprint 3): `POST /caregivers`, `POST /caregivers/{id}/session` and the dashboard. |
+| API routes | Working: `GET /health`, `POST /children`, `GET /caregivers/{id}/children`, `POST /sessions`, `POST /sessions/{id}/lines/{n}/audio`, `POST /stories/generate`, `GET /stories/{id}`, `GET /children/{id}/dashboard` (2026-11-02). Still 501 (Sprint 3): `POST /caregivers` and `POST /caregivers/{id}/session`. |
 | Scoring (Michael) | Azure Speech scores each word as `mastered`, `shaky` or `missed`. Every word is saved to `reading_attempt` and each pattern word updates the child's `phonics_mastery`. Tested through the real route with a computer-generated voice. Three bugs were found by the first real calls and fixed (see the Decisions Log, 2026-10-22 and 2026-10-23). A child's real recording has not been tried. |
 | Difficulty (Shokhina) | `select_difficulty_target` picks the patterns for the next story: patterns the child has mastered (score ≥ 0.8 over ≥ 5 attempts) to reinforce, plus the next 2 unmastered patterns in teaching order. A new child gets the first two patterns. This is the simple version; Sprint 3 replaces it. |
 | Story generation (Shokhina) | `POST /stories/generate` asks Claude Haiku 4.5 for a story, checks every word against the seeded vocabulary, retries up to 3 times with the rejected words fed back, and falls back to the best-matching pre-written story if all 3 fail. The story is saved (`story`, `story_line`, `story_pattern`, status `validated`) and the response says whether it came from the LLM or a fallback. Each LLM call times out after 15 seconds, and empty or oversized drafts are rejected. |
-| Frontend (Hailey) | Every screen is built: login, child picker, the reading flow and the parent dashboard. The child side uses the real backend: children, story generation, sessions and the audio upload, with the fixture ids so it works on any machine. After a line is read, each word turns mint (`mastered`) or coral (`shaky` or `missed`). The parent dashboard still shows sample data (now one set per fixture child), and login and PINs are still placeholders (`admin` / `123`, PIN `1234`). Adding a child accepts grades 1–3, the same range as the backend. The "Pick a story" titles on the start screen are placeholders; Start always generates a new story. |
+| Frontend (Hailey) | Every screen is built: login, child picker, the reading flow and the parent dashboard. The child side uses the real backend: children, story generation, sessions and the audio upload, with the fixture ids so it works on any machine. After a line is read, each word turns mint (`mastered`) or coral (`shaky` or `missed`). The parent dashboard reads real data from `GET /children/{id}/dashboard` (2026-11-02), and login and PINs are still placeholders (`admin` / `123`, PIN `1234`). Adding a child accepts grades 1–3, the same range as the backend. The start screen has just a Start button, which always generates a new story (the placeholder story picker was removed 2026-11-01). |
 | Tests | 126 backend tests pass on local Docker, and `ruff check` is clean. Tests that need a database skip with a message when Postgres is not running. No test calls the real Azure or Anthropic APIs. The frontend type-checks and lints cleanly; it has no tests. |
 
 ### What does not work yet
 
-- **The parent side isn't connected.** The dashboard shows sample data until its endpoint exists (Sprint 3), and adding a child from the dashboard is the only parent action that reaches the backend.
+- **Login and PINs aren't connected.** The dashboard and adding a child reach the backend, but login and both PIN gates are still placeholders until Open Question 12 and the PIN routes are done (Sprint 3).
 - **The LLM path is almost never used.** On 2026-10-22, 0 of 6 route calls and 0 of 10 direct runs passed the vocabulary check, and 2 more route calls on 2026-10-23 also fell back. The model keeps using words we haven't seeded (ocean, water, happy, friend, invented names). The fallback means a child still always gets a valid story. This is Open Question 17, for Sprint 3.
 - **No child's recording has been scored.** Adult voices work; a child's speech may score differently, and Michael's labelled-sample test doesn't exist yet.
-- **No login and no dashboard data.** Caregiver creation, login and the dashboard endpoint are Sprint 3. The dev fixtures stand in for login.
+- **No login.** Caregiver creation and login are Sprint 3. The dev fixtures stand in for login.
 - **A saved story doesn't remember whether it was a fallback** (Open Question 16, decided response-only for now).
 - **`main` matches `dev` as of 2026-10-23** (PR #25). It is brought up by a merge-commit PR at each milestone; the next one is the end of Sprint 3.
 
@@ -224,7 +224,7 @@ This is the sprint where the product stops being "first pass" and starts being a
 | 2 | `select_difficulty_target` has its real body; `DifficultyTarget` is unchanged | Not started |
 | 3 | The LLM's vocabulary pass rate (Open Question 17) is measured before and after at least one change, with the numbers in the Decisions Log | **Done 2026-10-30** (0/10 → 8/10, then endings for grammar; see the Decisions Log). More words next. |
 | 4 | A child's recording is scored, and a labelled sample is scored and compared to its labels | Carried from Sprint 2 |
-| 5 | The parent dashboard shows real data from its endpoint | Carried from Sprint 2 |
+| 5 | The parent dashboard shows real data from its endpoint | **Done 2026-11-02** (see the Decisions Log) |
 | 6 | At least one moderated usability session with a child is held and its findings recorded | Not started |
 
 #### Gates
@@ -267,11 +267,11 @@ Decisions, not code. Each blocks the work named after it, so hold them early in 
 
 #### Hailey — Component 4: the parent side and PINs
 
-- [ ] The dashboard on real data, once its endpoint exists (after G5). _(carried from Sprint 2)_
+- [x] The dashboard on real data, once its endpoint exists (after G5). _(carried from Sprint 2)_ _(Done 2026-11-02.)_
 - [ ] PIN screens call the verify routes instead of comparing locally, and show the throttled response.
 - [ ] The login screen calls the real login routes (after G5), replacing `admin` / `123`.
 - [x] Confirm the list-stories endpoint is dropped, and decide what the start screen's placeholder "Pick a story" titles become: the picked title is currently ignored, and Start always generates a new story. _(carried)_
-- [ ] Before merging `feature/end-to-end-connection`: its 2026-10-28 commit sets `CAREGIVER_ID` to an id that exists on one machine only. Keep the fixture id until the login routes replace it.
+- [x] Before merging `feature/end-to-end-connection`: its 2026-10-28 commit sets `CAREGIVER_ID` to an id that exists on one machine only. Keep the fixture id until the login routes replace it. _(Done 2026-11-02: `config.ts` holds the fixture id `f1000000-0000-4000-8000-000000000001`. The login routes will replace it.)_
 - [ ] Support the usability sessions, and make the dashboard revisions they call for.
 - [ ] With Shokhina: keep or merge the two dev-data scripts (`seed_dev_data.py`, random ids; `dev_fixtures.py`, fixed ids). Nothing uses the random-id caregiver now.
 
@@ -577,3 +577,12 @@ We reviewed the whole codebase before closing Sprint 2. Fixes went in as small P
 - **The list-stories endpoint is confirmed dropped** (carried from Sprint 2). Nothing on the child side lists existing stories, so there is nothing for a picker to show. If a "read an earlier story" feature comes back, it needs a list route and a new entry.
 - **What changed** (`frontend/src/child-ui/`): `StartScreen.tsx` is now a heading ("Ready to read?") and the Start button, with the placeholder list and its state removed. The picker-only styles are removed from `StartScreen.css`. The parent home empty state now reads "Their first story will show up here" instead of "Pick a story to get started".
 - **Also fixed:** the lint error `react-hooks/set-state-in-effect` in `ParentDashboard.tsx`. The loaded dashboard and the failed flag were two states reset inside the effect. They are now one `result` state tagged with the child and attempt it belongs to, and the dashboard and failed flag are worked out during render. A result for another child or an older attempt counts as "loading", so the previous child's data still never shows under the new name. Behaviour should be unchanged; checked with the type-checker, the linter and a production build.
+
+### 2026-11-02 — Dashboard endpoint built (Open Question 11 follow-through)
+
+- **`GET /children/{child_id}/dashboard` is real** _(Hailey, as decided 2026-11-01)_. It returns 404 for an unknown child. The files are `app/api/routes/dashboard.py` (renamed from the 501 stub), `app/schemas/dashboard.py` (the response, matching `Dashboard` in `frontend/src/api/types.ts`) and `app/services/dashboard.py` (the queries). The frontend flag `USE_MOCKS.dashboard` is now `false`. Tests: `tests/test_dashboard.py` (404, a child with no data, a child with sessions and mastery) and the dashboard path updated in `tests/test_route_stubs.py`. 153 tests pass on local Docker and `ruff check` is clean.
+- **`sessions` counts only sessions with at least one scored word** _(Hailey)_. It counts `reading_session` rows started in the last 7 days that have at least one `reading_attempt`. A session that was opened and never read doesn't count. We can't filter on status instead, because nothing sets a session to `completed` or sets `finished_at`: every session is still `in_progress`.
+- **`try_at_home` uses recently `shaky` or `missed` words** _(Hailey)_. Up to 5 distinct words from the child's newest 50 such attempts, newest first, lowercased with punctuation stripped (apostrophes kept), since `reading_attempt.expected_word` keeps the line's punctuation. If there are none, it falls back to the example words of the `working_on` patterns. "Recently" means newest, with no date cutoff.
+- **The other fields follow `fullstackconnection.md`.** `patterns` has one entry per mastery row with attempts, in `sequence_order`, with `fill = round(score × 100)`. `working_on` is the stretch patterns from `select_difficulty_target`, so the dashboard follows the engine when Component 2 replaces its body. `strongest` is the mastered pattern with the highest score (a tie goes to the earlier pattern), using `MASTERY_THRESHOLD` and `MIN_ATTEMPTS` from `difficulty.py`. `last_story` is the title from the child's most recent session, even if nothing was scored in it.
+- **Checked by hand on local Docker:** the counts for Mia, Leo and Sammy matched the database (one session with scored words each). Leo's other three sessions were opened and never read, so they are not counted.
+- **Two small parent-side layout fixes** (`ParentDashboard.css`): the Add child form's labels now sit above their inputs, so "Grade (1 to 3)" is no longer cut off by the number input, and the pattern label column is wider so "a_e (silent-e)" stays on one line.
