@@ -81,9 +81,9 @@ uv run python -m scripts.seed_vocabulary
 uv run python -m scripts.dev_fixtures
 ```
 
-- `seed_vocabulary` loads the 9 phonics patterns and 316 approved words. It's safe to run again.
+- `seed_vocabulary` loads the 9 phonics patterns and 562 approved words. It's safe to run again.
 - `dev_fixtures` adds one caregiver, two children (Mia and Leo) and one story, always with the same ids, so the frontend and the demo commands below work on every machine.
-- Both scripts refuse to touch a database that isn't on your machine unless you add `--allow-remote`, and `--dry-run` shows what would change without saving it.
+- Both scripts refuse to touch a database that isn't on your machine unless you add `--allow-remote`, and `--dry-run` shows what would change without saving it. Keep daily seeding local; shared Neon seeding follows the approval and dry-run rules below.
 
 The fixed ids:
 
@@ -124,7 +124,7 @@ uv run pytest
 uv run ruff check .
 ```
 
-The database tests need the Docker database running. Without it they are skipped, and each skip says what wasn't tested. No test calls the real Azure or Claude APIs.
+The database tests need the Docker database running. Without it they are skipped, and each skip says what wasn't tested. They must never run against Neon. No test calls the real Azure or Claude APIs.
 
 From `frontend/`:
 
@@ -135,7 +135,11 @@ npm run build
 
 ## Shared database (Neon)
 
-The team also shares a hosted Postgres on Neon, which has the same vocabulary and demo data. Its connection strings live only in ignored `.env` files. The app uses the pooled URL (`DATABASE_URL`) and migrations use the direct one (`DATABASE_URL_UNPOOLED`); `backend/.env.example` shows the format. Tests never run against Neon. Check with the team before running scripts or migrations against it.
+The team shares a hosted Postgres on Neon, which is the integration/demo database, not the daily development or test target. Its seed data may lag the current local seed until an approved re-seed. Use local Docker for normal work. For a PR that changes migrations or seeded data, test on a temporary Neon branch created from `dev`; discard it after the PR. Keep live connection strings only in ignored `.env` files. The app uses the pooled URL (`DATABASE_URL`) and migrations use the direct one (`DATABASE_URL_UNPOOLED`); `backend/.env.example` shows the format.
+
+Any teammate may apply a merged migration or re-run a seed on shared Neon `dev` only after explicit approval from all three teammates for that operation. Verify the target is `dev`, check the current migration and that there is exactly one Alembic head, and serialize upgrades. If two migration PRs started from the same head, merge one first and rebase/regenerate the other against the updated head; stop and resolve multiple heads before upgrading. For a shared re-seed, run `--dry-run` first and review its report. If shared data is damaged, pause writes and take a snapshot; after the same approval, re-run the seed/fixture scripts or restore/rebuild from a known-good snapshot if the scripts cannot repair it. Never apply migrations or seed scripts to `production`; never drop tables or hand-edit shared rows. Shokhina maintains the canonical seed, and Michael reviews schema/scoring impact.
+
+The database-backed validator tests run only on local Docker, where they seed a rolled-back throwaway schema. Neon branch smoke tests are not a substitute for the test suite. For migration or seed validation on a Neon branch, point the ignored Neon env file at that branch and explicitly opt in to remote access; do not repoint the ordinary local `.env`.
 
 ## Data handling
 
