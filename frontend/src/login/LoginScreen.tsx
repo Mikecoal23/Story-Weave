@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import './LoginScreen.css'
+import { request } from '../api/client'
 
 type Props = {
   onSuccess: () => void
@@ -14,6 +15,14 @@ function LoginScreen({ onSuccess, loadError }: Props) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState(false)
+  // Wiring check: can the frontend reach the backend's GET /health?
+  const [backend, setBackend] = useState<'checking' | 'ok' | 'down'>('checking')
+
+  useEffect(() => {
+    request<{ status: string }>('/health')
+      .then((data) => setBackend(data.status === 'ok' ? 'ok' : 'down'))
+      .catch(() => setBackend('down'))
+  }, [])
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -53,6 +62,9 @@ function LoginScreen({ onSuccess, loadError }: Props) {
         <button type="submit" className="login-btn">
           Log in
         </button>
+        <p className="login-status">
+          Backend: {backend === 'ok' ? 'connected' : backend === 'down' ? 'not reachable' : 'checking…'}
+        </p>
       </form>
       <span className="login-shape login-shape-lime" />
       <span className="login-shape login-shape-peach" />

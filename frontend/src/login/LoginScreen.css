@@ -150,6 +150,11 @@
   font-weight: 540;
 }
 
+.login-status {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
 /* Primary black pill */
 .login-btn {
   padding: 0.85rem 1.25rem;

@@ -10,5 +10,5 @@ export const USE_MOCKS = {
   children: false,
   stories: false,
   sessions: false,
-  dashboard: true,
+  dashboard: false,
 }

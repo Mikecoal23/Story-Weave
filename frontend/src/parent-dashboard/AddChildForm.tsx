@@ -52,11 +52,10 @@ function AddChildForm({ onAdded, onCancel }: Props) {
         />
       </label>
       <label>
-        Grade (1-3)
+        Grade (1 to 3)
         <input
           className="pd-input"
           type="number"
-          // Same range as the backend's CreateChildRequest and ck_child_grade_level
           min={1}
           max={3}
           value={grade}
