@@ -94,12 +94,25 @@ def test_mastered_patterns_are_reinforced_and_stretch_moves_on(db: Session) -> N
     assert target.stretch_pattern_ids == (ids[1], ids[2])
 
 
-def test_threshold_is_inclusive_at_80_percent_and_5_attempts(db: Session) -> None:
+def test_threshold_is_inclusive_at_a_confidence_of_80_percent(db: Session) -> None:
+    # 7 out of 8 gives a confidence of (7 + 1) / (8 + 2) = 0.8 exactly.
+    child = make_child(db)
+    ids = pattern_ids(db)
+    set_mastery(db, child, ids[0], score=0.875, attempts=8)
+
+    assert select_difficulty_target(db, child.id).reinforce_pattern_ids == (ids[0],)
+
+
+def test_four_out_of_five_is_not_mastered_yet(db: Session) -> None:
+    # The naive rule called 4 out of 5 mastered; its confidence is only 5/7 = 0.714.
     child = make_child(db)
     ids = pattern_ids(db)
     set_mastery(db, child, ids[0], score=0.8, attempts=5)
 
-    assert select_difficulty_target(db, child.id).reinforce_pattern_ids == (ids[0],)
+    target = select_difficulty_target(db, child.id)
+
+    assert target.reinforce_pattern_ids == ()
+    assert target.stretch_pattern_ids == tuple(ids[:2])
 
 
 def test_a_high_score_with_too_few_attempts_is_not_mastered(db: Session) -> None:
@@ -137,10 +150,23 @@ def test_a_gap_in_the_sequence_stays_in_stretch(db: Session) -> None:
 def test_reinforce_is_in_sequence_order(db: Session) -> None:
     child = make_child(db)
     ids = pattern_ids(db)
-    set_mastery(db, child, ids[2], score=0.9, attempts=6)
-    set_mastery(db, child, ids[0], score=0.9, attempts=6)
+    set_mastery(db, child, ids[2], score=0.9, attempts=10)
+    set_mastery(db, child, ids[0], score=0.9, attempts=10)
 
     assert select_difficulty_target(db, child.id).reinforce_pattern_ids == (ids[0], ids[2])
+
+
+def test_reinforce_keeps_only_the_two_weakest_mastered_patterns(db: Session) -> None:
+    child = make_child(db)
+    ids = pattern_ids(db)
+    set_mastery(db, child, ids[0], score=1.0, attempts=20)  # 21/22 = 0.955, the strongest
+    set_mastery(db, child, ids[1], score=0.9, attempts=10)  # 10/12 = 0.833
+    set_mastery(db, child, ids[2], score=1.0, attempts=5)  # 6/7 = 0.857
+
+    target = select_difficulty_target(db, child.id)
+
+    assert target.reinforce_pattern_ids == (ids[1], ids[2])
+    assert target.stretch_pattern_ids == (ids[3], ids[4])
 
 
 def test_another_childs_mastery_is_ignored(db: Session) -> None:
@@ -163,5 +189,6 @@ def test_when_everything_is_mastered_stretch_is_empty(db: Session) -> None:
 
     target = select_difficulty_target(db, child.id)
 
-    assert target.reinforce_pattern_ids == tuple(ids)
+    # All tie on confidence, so the two earliest patterns are reinforced.
+    assert target.reinforce_pattern_ids == tuple(ids[:2])
     assert target.stretch_pattern_ids == ()
