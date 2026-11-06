@@ -167,6 +167,17 @@
   cursor: pointer;
 }
 
+/* Text link that switches between log in and create account */
+.login-switch {
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-decoration: underline;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
 /* Narrow screens: stack the blocks, hero on top */
 @media (max-width: 768px) {
   .login {

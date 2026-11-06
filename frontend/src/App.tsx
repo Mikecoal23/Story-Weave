@@ -5,6 +5,7 @@ import PinScreen from './pin/PinScreen'
 import ChildPicker from './child-ui/ChildPicker'
 import type { Child } from './api/types'
 import { getChildren } from './api/children'
+import { logout } from './api/caregivers'
 import ChildApp from './child-ui/ChildApp'
 import ParentDashboard from './parent-dashboard/ParentDashboard'
 
@@ -37,10 +38,18 @@ function App() {
     setScreen('entry')
   }
 
+  // Forget the caregiver and their children, so the next login starts clean
+  function handleLogout() {
+    logout()
+    setChildList([])
+    setChild(null)
+    setScreen('login')
+  }
+
   if (screen === 'login') return <LoginScreen onSuccess={handleLogin} loadError={loadError} />
   if (screen === 'parentPin')
     return <PinScreen title="Enter parent PIN" expectedPin={PARENT_PIN} onSuccess={() => setScreen('parent')} />
-  if (screen === 'parent') return <ParentDashboard childList={childList} onChildAdded={loadChildren} onLogout={() => setScreen('login')} />
+  if (screen === 'parent') return <ParentDashboard childList={childList} onChildAdded={loadChildren} onLogout={handleLogout} />
   if (screen === 'childPicker')
     return (
       <ChildPicker
