@@ -3,7 +3,14 @@ import pytest
 from app.services.story_templates import FALLBACK_TEMPLATES
 from app.services.vocabulary_validator import tokenize
 from scripts import seed_data
-from scripts.seed_data import PATTERNS, WordSeed, add_ending, build_words, normalize_word
+from scripts.seed_data import (
+    PATTERNS,
+    WordSeed,
+    add_ending,
+    build_words,
+    normalize_word,
+    unpatterned_words,
+)
 
 
 def by_word() -> dict[str, WordSeed]:
@@ -169,6 +176,55 @@ def test_an_already_seeded_form_keeps_its_own_row() -> None:
     words = by_word()
     assert words["does"].is_sight_word
     assert words["goes"].is_sight_word
+
+
+def test_sprint3_pattern_words_carry_their_tags() -> None:
+    words = by_word()
+    assert words["splash"].pattern_codes == {"digraph_sh"}
+    assert words["shape"].pattern_codes == {"digraph_sh", "silent_e_a"}
+    assert words["frame"].pattern_codes == {"blend_fr", "silent_e_a"}
+    assert words["chimp"].pattern_codes == {"digraph_ch", "final_blend_mp"}
+    assert words["blimp"].pattern_codes == {"blend_bl", "final_blend_mp"}
+    # The dagger words are tagged only with the taught pattern (decision B).
+    assert words["shark"].pattern_codes == {"digraph_sh"}
+    assert words["mother"].pattern_codes == {"digraph_th"}
+    assert words["train"].pattern_codes == {"vowel_team_ai_ay"}
+
+
+def test_friend_is_a_sight_word_not_a_fr_word() -> None:
+    words = by_word()
+    assert words["friend"].is_sight_word and not words["friend"].pattern_codes
+    assert words["friends"].is_sight_word and not words["friends"].pattern_codes
+
+
+def test_the_most_rejected_words_are_now_seeded() -> None:
+    # The words the live LLM was rejected for most often on 2026-10-30.
+    words = by_word()
+    for word in "water friends swam splash happy felt back met pals glad".split():
+        assert word in words, word
+
+
+def test_sprint3_ending_forms_are_seeded() -> None:
+    words = by_word()
+    for word in ("splashed", "swimming", "hopped", "benches", "foxes", "puppies", "closing"):
+        assert word in words, word
+    assert words["splashed"].pattern_codes == {"digraph_sh"}
+
+
+def test_unpatterned_words_lists_every_word_with_no_pattern_and_no_sight_flag() -> None:
+    words = build_words()
+    tracked = unpatterned_words(words)
+    assert tracked == sorted(tracked)
+    assert {"water", "happy", "sat", "dog", "dogs", "swimming"} <= set(tracked)
+    assert not {"friend", "ship", "the"} & set(tracked)
+
+
+def test_build_words_rejects_a_word_in_both_pattern_and_unpatterned(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(seed_data, "UNPATTERNED_WORDS", ("water", "ship"))
+    with pytest.raises(ValueError, match="pattern and unpatterned"):
+        build_words()
 
 
 def test_build_words_rejects_an_ending_base_that_is_not_seeded(
