@@ -23,7 +23,7 @@ from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session
 
 from app.models import PhonicsPattern, VocabularyWord, VocabularyWordPattern
-from scripts.seed_data import PATTERNS, build_words
+from scripts.seed_data import PATTERNS, build_words, unpatterned_words
 
 LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
 
@@ -163,6 +163,7 @@ def main(argv: list[str] | None = None) -> int:
 
     mode = "DRY RUN (rolled back)" if args.dry_run else "COMMITTED"
     print(f"{mode}: {report}")
+    print(f"Unpatterned words (no pattern, not sight): {len(unpatterned_words(build_words()))}")
     return 0
 
 

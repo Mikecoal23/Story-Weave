@@ -8,7 +8,9 @@ or demoted between "sight word" and "pattern word".
 Sources: sprint1_phonics_pattern_starter_set.md (pattern metadata, sequence_order) and
 the ratified word table (planning.md Decisions Log, seeding entry). Sight words are the
 Dolch list (220 words) minus every Dolch word that is a pattern word. Word endings
-(-s/-es, -ed, -ing) are generated from the base-word lists below (2026-10-30).
+(-s/-es, -ed, -ing) are generated from the base-word lists below (2026-10-30). The candidate
+words from sprint3_word_list_candidates.md (signed off by the team, 2026-11-05) are marked
+"Sprint 3" below.
 """
 
 import re
@@ -53,28 +55,39 @@ PATTERNS: tuple[PatternSeed, ...] = (
 PATTERN_WORDS: dict[str, tuple[str, ...]] = {
     "digraph_sh": (
         "ship shop shell shed shut fish wish dish rush mash fresh shake "
-        "wash show shall"  # promoted from Dolch
+        "wash show shall "  # promoted from Dolch
+        "splash brush crash flash dash cash trash shelf shark shore sheep shy shape"  # Sprint 3
     ).split(),
     "digraph_ch": (
-        "chip chop chin chat much such rich lunch chase champ which"  # promoted from Dolch
+        "chip chop chin chat much such rich lunch chase champ which "  # promoted from Dolch
+        "bench inch chest chick check each beach reach teach chimp"  # Sprint 3
     ).split(),
     "digraph_th": (
         "this that then them thin with bath math path moth "
-        "these those think thank three both together"  # promoted from Dolch
+        "these those think thank three both together "  # promoted from Dolch
+        "thing cloth tooth other mother brother father"  # Sprint 3
     ).split(),
-    "blend_bl": "blob blot bled blip blab black blue blink".split(),
+    "blend_bl": (
+        "blob blot bled blip blab black blue blink block blast blend blank blimp"  # Sprint 3
+    ).split(),
     "blend_cl": (
-        "clap clip clam clan club clog clot clad clay clock clean"  # promoted from Dolch
+        "clap clip clam clan club clog clot clad clay clock clean "  # promoted from Dolch
+        "class cliff close"  # Sprint 3
     ).split(),
-    "blend_fr": "frog from fret fresh frill".split(),
+    "blend_fr": "frog from fret fresh frill frost frame free fruit".split(),  # last 4: Sprint 3
     "silent_e_a": (
         "cake name make take game gate late lake same tape shake chase "
-        "made gave came ate"  # promoted from Dolch
+        "made gave came ate "  # promoted from Dolch
+        "became wave cave plane plate grape skate snake bake safe shape whale frame"  # Sprint 3
     ).split(),
     "vowel_team_ai_ay": (
-        "rain day say may way pay tail mail wait clay play stay away always"  # promoted from Dolch
+        "rain day say may way pay tail mail wait clay play stay away always "  # promoted from Dolch
+        "paint train sail snail tray gray hay"  # Sprint 3
     ).split(),
-    "final_blend_mp": "jump lamp camp damp bump pump lump dump limp ramp champ".split(),
+    "final_blend_mp": (
+        "jump lamp camp damp bump pump lump dump limp ramp champ "
+        "swamp stamp stump stomp plump chimp blimp"  # Sprint 3
+    ).split(),
 }
 
 # Dolch sight words by grade (220). Whether each becomes a sight word or a pattern word
@@ -110,6 +123,28 @@ DOLCH_WORDS: tuple[str, ...] = tuple(
 # templates need them, and they keep their slot open for a future CVC pattern.
 FILLER_WORDS: tuple[str, ...] = ("sat", "fell", "fun")
 
+# Sight words that are not on the Dolch list (Sprint 3). "friend" has an irregular vowel, so it
+# is learned by sight rather than tagged with FR.
+SIGHT_EXTRA_WORDS: tuple[str, ...] = ("friend",)
+
+# Sprint 3 (Group B of sprint3_word_list_candidates.md, plus common kid-interest words added
+# 2026-11-05): allowed in stories and saved when read, but no pattern teaches them, so reading
+# them changes no mastery. `unpatterned_words` lists every such word so none goes untracked.
+UNPATTERNED_WORDS: tuple[str, ...] = (
+    # the words the LLM was rejected for most often
+    "water happy back met glad felt rest pond rock swim swam sea high eyes hello hi more next "
+    "pal "
+    # everyday short words
+    "cat hen fox bug mud sad mom dad pet wet hop hug nap bus log dock bank flip skip "
+    # other common words
+    "night cool food star moon began smile let's "
+    # interests: ocean, space and trucks
+    "sand crab truck rocket "
+    # general kid interests
+    "bear horse puppy kitten bunny lion bike kite boat robot pizza apple cookie snow sky tent "
+    "park zoo slide swing doll king magic music mouse bee"
+).split()
+
 # A small subset of the Dolch noun list (not in the repo), chosen to avoid patterns that
 # are not taught yet, so stories can have subjects and objects.
 NOUN_WORDS: tuple[str, ...] = (
@@ -125,6 +160,10 @@ REGULAR_VERBS: tuple[str, ...] = (
     # pattern words
     "ship shop wish rush mash wash fish show chop chat chase thank blink clap clip clean "
     "name wait rain play stay jump bump pump dump camp mail tape "
+    "splash brush crash flash dash paint train sail check reach teach block blend close bake "
+    "wave skate stamp stomp "  # Sprint 3
+    # unpatterned words (Sprint 3)
+    "hop hug nap flip skip rest smile "
     # sight words
     "look help like want ask walk stop open live call work pull use start pick carry laugh try"
 ).split()
@@ -133,14 +172,21 @@ REGULAR_VERBS: tuple[str, ...] = (
 IRREGULAR_VERBS: tuple[str, ...] = (
     "make take shake think say pay shut "  # pattern words
     "run find come go do see eat ride get sit sing read tell sleep keep bring drink hold cut "
-    "fly give draw grow buy write know put fall hurt"  # sight words
+    "fly give draw grow buy write know put fall hurt "  # sight words
+    "swim"  # unpatterned (Sprint 3); swam is its own word
 ).split()
 # Takes -s/-es only.
 PLURAL_NOUNS: tuple[str, ...] = (
     "shell dish chip moth path bath cake game gate lake tail day way lamp clock frog clam "
     "club "  # pattern words
     "ball bed bird box boy car cow dog door duck egg farm girl hand hill home house nest pig "
-    "toy tree"  # nouns
+    "toy tree "  # nouns
+    "bench chest chick beach thing block class cliff wave cave plane plate grape skate snake "
+    "whale shark shore frame stamp stump chimp blimp tray "  # pattern words (Sprint 3)
+    "friend "  # sight word (Sprint 3)
+    "cat hen fox bug bus log dock bank pal rock star moon sand crab truck rocket pet pond mom "
+    "dad bear horse puppy kitten bunny lion bike kite boat robot pizza apple cookie tent park "
+    "zoo slide swing doll king bee"  # unpatterned words (Sprint 3)
 ).split()
 
 _VOWELS = "aeiou"
@@ -217,16 +263,21 @@ def build_words() -> list[WordSeed]:
                 raise ValueError(f"pattern word {raw!r} is not normalized")
             tags.setdefault(word, set()).add(code)
 
-    sight = {normalize_word(w) for w in DOLCH_WORDS} - set(tags)
+    sight = {normalize_word(w) for w in (*DOLCH_WORDS, *SIGHT_EXTRA_WORDS)} - set(tags)
     filler = {normalize_word(w) for w in FILLER_WORDS}
     nouns = {normalize_word(w) for w in NOUN_WORDS}
+    unpatterned = {normalize_word(w) for w in UNPATTERNED_WORDS}
 
     for name_a, set_a, name_b, set_b in (
         ("sight", sight, "filler", filler),
         ("sight", sight, "noun", nouns),
+        ("sight", sight, "unpatterned", unpatterned),
         ("filler", filler, "noun", nouns),
+        ("filler", filler, "unpatterned", unpatterned),
+        ("noun", nouns, "unpatterned", unpatterned),
         ("pattern", set(tags), "filler", filler),
         ("pattern", set(tags), "noun", nouns),
+        ("pattern", set(tags), "unpatterned", unpatterned),
     ):
         both = set_a & set_b
         if both:
@@ -234,9 +285,18 @@ def build_words() -> list[WordSeed]:
 
     words = [WordSeed(w, False, frozenset(codes)) for w, codes in tags.items()]
     words += [WordSeed(w, True, frozenset()) for w in sight]
-    words += [WordSeed(w, False, frozenset()) for w in filler | nouns]
+    words += [WordSeed(w, False, frozenset()) for w in filler | nouns | unpatterned]
     words += inflected_words({seed.word: seed for seed in words})
     for seed in words:
         if not seed.word or seed.word != normalize_word(seed.word):
             raise ValueError(f"word {seed.word!r} is not normalized")
     return sorted(words, key=lambda s: s.word)
+
+
+def unpatterned_words(words: list[WordSeed]) -> list[str]:
+    """Every word that is allowed in stories but taught by no pattern and not a sight word.
+
+    Reading these changes no mastery, so they never show on the dashboard; this list is how
+    we keep track of them.
+    """
+    return sorted(w.word for w in words if not w.is_sight_word and not w.pattern_codes)
