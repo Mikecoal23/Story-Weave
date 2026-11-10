@@ -128,9 +128,7 @@ def test_flagged_pattern_error_is_persisted_but_not_counted_in_mastery(db: Sessi
         db,
         reading.id,
         line.id,
-        ScoreResult(
-            words=[WordScore(expected_word="ship", recognized_word="sip", status="shaky")]
-        ),
+        ScoreResult(words=[WordScore(expected_word="ship", recognized_word="sip", status="shaky")]),
     )
     attempt = db.scalar(
         select(ReadingAttempt).where(ReadingAttempt.reading_session_id == reading.id)

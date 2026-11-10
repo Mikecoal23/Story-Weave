@@ -1,3 +1,4 @@
+import logging
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, HTTPException, Path, UploadFile
@@ -7,15 +8,19 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models import ReadingSession, Story, StoryLine
 from app.schemas.sessions import LineAudioResponse, StartSessionRequest, StartSessionResponse
-from app.services.scoring import process_line_score, score_line_audio
+from app.services.scoring import (
+    AudioAssessmentNotConfiguredError,
+    process_line_score,
+    score_line_audio,
+)
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
+MAX_AUDIO_UPLOAD_BYTES = 10 * 1024 * 1024
 
 
 @router.post("/sessions", response_model=StartSessionResponse, status_code=201)
-def start_session(
-    body: StartSessionRequest, db: Session = Depends(get_db)
-) -> StartSessionResponse:
+def start_session(body: StartSessionRequest, db: Session = Depends(get_db)) -> StartSessionResponse:
     story = db.get(Story, body.story_id)
     if story is None or story.child_id != body.child_id:
         raise HTTPException(status_code=404, detail="Story not found for this child")
@@ -50,13 +55,20 @@ def upload_line_audio(
     if story_line is None:
         raise HTTPException(status_code=404, detail="Story line not found")
 
+    audio_bytes = audio.file.read(MAX_AUDIO_UPLOAD_BYTES + 1)
+    if len(audio_bytes) > MAX_AUDIO_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="Audio upload exceeds the 10 MB limit")
+
     try:
-        score_result = score_line_audio(audio.file.read(), story_line.text)
+        score_result = score_line_audio(audio_bytes, story_line.text)
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
     except TimeoutError as error:
         raise HTTPException(status_code=504, detail="Audio assessment timed out") from error
+    except AudioAssessmentNotConfiguredError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
     except RuntimeError as error:
+        logger.exception("Audio assessment failed; returning 502")
         raise HTTPException(status_code=502, detail="Azure Speech assessment failed") from error
 
     score_result = process_line_score(db, session_id, story_line.id, score_result)

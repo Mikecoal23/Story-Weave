@@ -35,14 +35,13 @@ export type LineAudioResponse = {
   result: ScoreResult | null
 }
 
-// What the parent dashboard shows for one child. The backend has not defined this
-// response yet, so this shape is a frontend proposal built from what the UI displays.
+// What the parent dashboard shows for one child, from GET /children/{child_id}/dashboard.
+// snake_case like the backend, so the response is used as it comes (no mapping).
 export type Dashboard = {
   sessions: number // reading sessions this week
-  minutes: number
-  lastStory: string
-  workingOn: string[] // pattern labels, e.g. ['sh', 'ch']
-  strongest: string // pattern to praise
+  last_story: string | null // null until the first session
+  working_on: string[] // pattern labels, e.g. ['sh', 'ch']
+  strongest: string | null // pattern to praise; null until there is data
   patterns: { label: string; fill: number }[] // fill is percent mastered
-  tryAtHome: string[] // practice words
+  try_at_home: string[] // practice words
 }

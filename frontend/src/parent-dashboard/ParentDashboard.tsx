@@ -18,9 +18,12 @@ type Props = {
 function ParentDashboard({ childList, onChildAdded, onLogout }: Props) {
   const [tab, setTab] = useState<Tab>('Home')
   // Defaults to the first child; the dropdown on Home switches it
-  const [child, setChild] = useState(childList[0])
-  const [dashboard, setDashboard] = useState<Dashboard | null>(null)
-  const [failed, setFailed] = useState(false)
+  // Undefined when the caregiver has no children yet
+  const [child, setChild] = useState<Child | undefined>(childList[0])
+  // Bumping this re-runs the effect below, which is how "Try again" reloads the stats
+  const [attempt, setAttempt] = useState(0)
+  // The last fetch result, tagged with the child and attempt it belongs to (data null = failed)
+  const [result, setResult] = useState<{ id: string; attempt: number; data: Dashboard | null } | null>(null)
 
   function handleAdded(newChild: Child) {
     onChildAdded()
@@ -28,21 +31,27 @@ function ParentDashboard({ childList, onChildAdded, onLogout }: Props) {
   }
 
   // Reload the stats whenever a different child is selected
+  const childId = child?.id
+  // A result for another child or an older attempt counts as "still loading",
+  // so the previous child's data never shows under the new name
+  const current = result && result.id === childId && result.attempt === attempt ? result : null
+  const dashboard = current?.data ?? null
+  const failed = current !== null && current.data === null
+
   useEffect(() => {
+    if (!childId) return
     let cancelled = false
-    getDashboard(child.id)
+    getDashboard(childId)
       .then((data) => {
-        if (cancelled) return
-        setDashboard(data)
-        setFailed(false)
+        if (!cancelled) setResult({ id: childId, attempt, data })
       })
       .catch(() => {
-        if (!cancelled) setFailed(true)
+        if (!cancelled) setResult({ id: childId, attempt, data: null })
       })
     return () => {
       cancelled = true
     }
-  }, [child.id])
+  }, [childId, attempt])
 
   return (
     <div className="pd-layout">
@@ -56,19 +65,29 @@ function ParentDashboard({ childList, onChildAdded, onLogout }: Props) {
             onAdded={handleAdded}
             dashboard={dashboard}
             failed={failed}
+            onRetry={() => setAttempt(attempt + 1)}
           />
         )}
         {tab === 'Progress' &&
-          (dashboard ? (
+          (!child ? (
+            <p className="pd-hint">Add a child on the Home tab first.</p>
+          ) : dashboard ? (
             <>
-              <WeekSummary dashboard={dashboard} />
+              <WeekSummary childName={child.name} dashboard={dashboard} />
               <div className="pd-grid">
                 <PatternsInProgress patterns={dashboard.patterns} />
-                <TryAtHome words={dashboard.tryAtHome} />
+                <TryAtHome words={dashboard.try_at_home} />
               </div>
             </>
+          ) : failed ? (
+            <>
+              <p className="pd-hint">Couldn't load the dashboard</p>
+              <button type="button" className="pd-chip" onClick={() => setAttempt(attempt + 1)}>
+                Try again
+              </button>
+            </>
           ) : (
-            <p className="pd-hint">{failed ? "Couldn't load the dashboard" : 'Loading…'}</p>
+            <p className="pd-hint">Loading…</p>
           ))}
         {tab === 'Practice' && <PracticeTab />}
       </main>

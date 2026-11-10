@@ -150,6 +150,11 @@
   font-weight: 540;
 }
 
+.login-status {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
 /* Primary black pill */
 .login-btn {
   padding: 0.85rem 1.25rem;
@@ -159,6 +164,17 @@
   background: #000;
   border: none;
   border-radius: 50px;
+  cursor: pointer;
+}
+
+/* Text link that switches between log in and create account */
+.login-switch {
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-decoration: underline;
+  background: none;
+  border: none;
   cursor: pointer;
 }
 

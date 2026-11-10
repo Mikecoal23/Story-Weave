@@ -3,7 +3,7 @@ import { delay, request } from './client'
 import type { Story } from './types'
 
 const mockStory: Story = {
-  id: 'a7ecc5f3-59ce-4c69-acc9-20fd817df543',
+  id: 'f1000000-0000-4000-8000-0000000000b1',
   title: 'The Ship and the Fish',
   theme: 'the ocean',
   lines: [

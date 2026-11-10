@@ -29,9 +29,7 @@ def test_parse_azure_assessment_maps_word_error_types() -> None:
                             },
                             {
                                 "Word": "cat",
-                                "PronunciationAssessment": {
-                                    "ErrorType": "Mispronunciation"
-                                },
+                                "PronunciationAssessment": {"ErrorType": "Mispronunciation"},
                             },
                             {
                                 "Word": "sat",
@@ -131,6 +129,7 @@ def test_process_line_score_persists_words_and_updates_non_sight_patterns() -> N
         (1, 1),
         (2, 2),
     ]
+    assert attempts[0].expected_word == "Ship,"
     assert existing_mastery.attempts_count == 3
     assert existing_mastery.correct_count == 2
     assert existing_mastery.mastery_score == pytest.approx(2 / 3)
@@ -221,13 +220,10 @@ def test_unflagged_error_is_classified_as_unclassified() -> None:
         session,
         session_id,
         line_id,
-        ScoreResult(
-            words=[WordScore(expected_word="ship", recognized_word="sip", status="shaky")]
-        ),
+        ScoreResult(words=[WordScore(expected_word="ship", recognized_word="sip", status="shaky")]),
     )
 
     assert result.words[0].error_classification == "unclassified"
-
 
 
 def test_process_line_score_rejects_a_line_outside_the_session() -> None:

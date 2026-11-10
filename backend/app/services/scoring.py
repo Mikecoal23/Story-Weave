@@ -26,6 +26,10 @@ from app.models import (
 from app.schemas.scoring import ScoreResult, WordScore
 
 
+class AudioAssessmentNotConfiguredError(RuntimeError):
+    """Raised when a required audio-assessment dependency is unavailable."""
+
+
 def _normalize_scored_word(word: str) -> str:
     return normalize_word(word).strip(punctuation.replace("'", ""))
 
@@ -33,7 +37,10 @@ def _normalize_scored_word(word: str) -> str:
 def score_line_audio(audio_bytes: bytes, expected_line: str) -> ScoreResult:
     """Assess a browser recording against its expected line with Azure Speech."""
     if not settings.azure_speech_key or not settings.azure_speech_region:
-        raise RuntimeError("Set AZURE_SPEECH_KEY and AZURE_SPEECH_REGION in backend/.env")
+        raise AudioAssessmentNotConfiguredError(
+            "Audio assessment is not configured: set AZURE_SPEECH_KEY and "
+            "AZURE_SPEECH_REGION in backend/.env"
+        )
     if not audio_bytes:
         raise ValueError("Audio upload is empty")
     if not expected_line.strip():
@@ -47,7 +54,9 @@ def score_line_audio(audio_bytes: bytes, expected_line: str) -> ScoreResult:
 
     import azure.cognitiveservices.speech as speechsdk
 
-    with tempfile.TemporaryDirectory() as temp_dir:
+    # The Azure SDK can still hold audio.wav open when this block exits, and Windows refuses
+    # to delete an open file, so a failed cleanup must not turn a good score into a 500.
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as temp_dir:
         wav_path = Path(temp_dir) / "audio.wav"
         wav_path.write_bytes(wav_bytes)
         audio_config = speechsdk.audio.AudioConfig(filename=str(wav_path))
@@ -73,8 +82,7 @@ def score_line_audio(audio_bytes: bytes, expected_line: str) -> ScoreResult:
         if result.reason == speechsdk.ResultReason.NoMatch:
             return ScoreResult(
                 words=[
-                    WordScore(expected_word=word, status="missed")
-                    for word in expected_line.split()
+                    WordScore(expected_word=word, status="missed") for word in expected_line.split()
                 ]
             )
         if result.reason == speechsdk.ResultReason.Canceled:
@@ -91,7 +99,9 @@ def score_line_audio(audio_bytes: bytes, expected_line: str) -> ScoreResult:
 def _convert_to_wav(audio_bytes: bytes) -> bytes:
     ffmpeg = shutil.which("ffmpeg")
     if ffmpeg is None:
-        raise RuntimeError("FFmpeg is required to convert uploaded audio for Azure Speech")
+        raise AudioAssessmentNotConfiguredError(
+            "Audio assessment is not configured: FFmpeg is required to convert uploaded audio"
+        )
 
     # FFmpeg writes the WAV to a file, not to a pipe: a pipe can't be seeked, so the header
     # would claim an unknown (2**31 - 1 frame) length and the duration check would reject
@@ -186,9 +196,7 @@ def process_line_score(
     if story_line is None or story_line.story_id != reading_session.story_id:
         raise ValueError("Story line does not belong to the reading session")
 
-    word_keys = {
-        _normalize_scored_word(word.expected_word) for word in score_result.words
-    }
+    word_keys = {_normalize_scored_word(word.expected_word) for word in score_result.words}
     vocabulary_rows = session.execute(
         select(VocabularyWord, VocabularyWordPattern.phonics_pattern_id)
         .outerjoin(

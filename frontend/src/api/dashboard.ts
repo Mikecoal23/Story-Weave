@@ -9,37 +9,44 @@ const LEO_ID = 'f1000000-0000-4000-8000-0000000000a2'
 const mockDashboards: Record<string, Dashboard> = {
   [MIA_ID]: {
     sessions: 3,
-    minutes: 12,
-    lastStory: 'The Shell on the Beach',
-    workingOn: ['sh', 'ch'],
+    last_story: 'The Shell on the Beach',
+    working_on: ['sh', 'ch'],
     strongest: 'silent-e',
     patterns: [
       { label: 'sh', fill: 90 },
       { label: 'ch', fill: 65 },
       { label: 'blends', fill: 30 },
     ],
-    tryAtHome: ['shop', 'shell', 'shed'],
+    try_at_home: ['shop', 'shell', 'shed'],
   },
   [LEO_ID]: {
     sessions: 5,
-    minutes: 20,
-    lastStory: 'The Truck on the Moon',
-    workingOn: ['th', 'blends'],
+    last_story: 'The Truck on the Moon',
+    working_on: ['th', 'blends'],
     strongest: 'sh',
     patterns: [
       { label: 'th', fill: 55 },
       { label: 'blends', fill: 40 },
       { label: 'sh', fill: 85 },
     ],
-    tryAtHome: ['this', 'that', 'frog'],
+    try_at_home: ['this', 'that', 'frog'],
   },
+}
+
+const emptyDashboard: Dashboard = {
+  sessions: 0,
+  last_story: null,
+  working_on: [],
+  strongest: null,
+  patterns: [],
+  try_at_home: [],
 }
 
 export async function getDashboard(childId: string): Promise<Dashboard> {
   if (USE_MOCKS.dashboard) {
     await delay(300)
-    // Children added in the app have no sample data, so they fall back to the first one
-    return mockDashboards[childId] ?? mockDashboards[MIA_ID]
+    // Children added in the app have no sessions yet
+    return mockDashboards[childId] ?? emptyDashboard
   }
-  return request<Dashboard>(`/caregivers/${childId}/dashboard`)
+  return request<Dashboard>(`/children/${childId}/dashboard`)
 }

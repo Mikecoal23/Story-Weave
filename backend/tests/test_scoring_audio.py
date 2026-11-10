@@ -49,6 +49,21 @@ def test_convert_to_wav_rejects_audio_ffmpeg_cannot_decode() -> None:
         scoring._convert_to_wav(b"this is not audio")
 
 
+def test_convert_to_wav_reports_when_ffmpeg_is_not_configured(monkeypatch) -> None:
+    monkeypatch.setattr(scoring.shutil, "which", lambda _: None)
+
+    with pytest.raises(scoring.AudioAssessmentNotConfiguredError, match="not configured"):
+        scoring._convert_to_wav(b"audio")
+
+
+def test_score_line_audio_reports_missing_azure_configuration(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "azure_speech_key", None)
+    monkeypatch.setattr(settings, "azure_speech_region", "test-region")
+
+    with pytest.raises(scoring.AudioAssessmentNotConfiguredError, match="not configured"):
+        scoring.score_line_audio(b"audio", "ship")
+
+
 def fake_speech_sdk(result_json: str) -> MagicMock:
     sdk = MagicMock()
     sdk.ResultReason = SimpleNamespace(NoMatch="no-match", Canceled="canceled", Recognized="ok")

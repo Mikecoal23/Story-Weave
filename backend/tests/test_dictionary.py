@@ -32,9 +32,7 @@ def test_dictionary_lookup_returns_definition_phonetic_and_audio(monkeypatch) ->
         "word": "ship",
         "phonetic": "ˈship",
         "definition": "a large seagoing vessel",
-        "audio_url": (
-            "https://media.merriam-webster.com/audio/prons/en/us/mp3/s/ship0001.mp3"
-        ),
+        "audio_url": ("https://media.merriam-webster.com/audio/prons/en/us/mp3/s/ship0001.mp3"),
     }
 
 

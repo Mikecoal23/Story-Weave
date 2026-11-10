@@ -1,25 +1,20 @@
-from uuid import uuid4
-
 import pytest
-from fastapi.testclient import TestClient
 
 from app.main import app
 from app.schemas.scoring import ScoreResult, WordScore
 from app.schemas.sessions import LineAudioResponse
 
-client = TestClient(app)
-
 # The team's planned REST contract (planning.md, Stage 1), as (method, path) pairs.
 PLANNED_ROUTES = [
     ("POST", "/caregivers"),
-    ("POST", "/caregivers/{caregiver_id}/session"),
+    ("POST", "/caregivers/session"),
     ("POST", "/children"),
     ("GET", "/caregivers/{caregiver_id}/children"),
     ("POST", "/sessions"),
     ("POST", "/sessions/{session_id}/lines/{line_number}/audio"),
     ("GET", "/stories/{story_id}"),
     ("POST", "/stories/generate"),
-    ("GET", "/caregivers/{child_id}/dashboard"),
+    ("GET", "/children/{child_id}/dashboard"),
 ]
 
 
@@ -30,20 +25,6 @@ def test_all_planned_routes_are_in_openapi_schema() -> None:
 
     for method, path in PLANNED_ROUTES:
         assert method.lower() in paths.get(path, {}), f"missing {method} {path}"
-
-
-def test_stub_routes_return_501() -> None:
-    requests = [
-        ("post", "/caregivers", {}),
-        ("post", f"/caregivers/{uuid4()}/session", {}),
-        ("get", f"/caregivers/{uuid4()}/dashboard", {}),
-    ]
-
-    for method, path, kwargs in requests:
-        response = getattr(client, method)(path, **kwargs)
-        assert response.status_code == 501, (
-            f"{method.upper()} {path} returned {response.status_code}"
-        )
 
 
 def test_line_audio_response_always_includes_status() -> None:

@@ -1,6 +1,6 @@
 # StoryWeave: Product and Sprint Plan
 
-_Our plan and decision record for StoryWeave, an adaptive, phonics-aware story generator for early readers. Update it in the same PR as the work it describes. Started 2026-09-28; restructured at the end of Sprint 1 (2026-10-09), tidied at the end of Sprint 2 (2026-10-23), and Sprint 2 formally closed with Sprint 3 cut on 2026-10-28._
+_Our plan and decision record for StoryWeave, an adaptive, phonics-aware story generator for early readers. Update it in the same PR as the work it describes. Started 2026-09-28; restructured at the end of Sprint 1 (2026-10-09), tidied at the end of Sprint 2 (2026-10-23), and Sprint 2 formally closed with Sprint 3 cut on 2026-10-28. Sprint 3 closed 2026-11-06 (recorded 2026-11-07), with its open work moved to Sprint 4 week 1._
 
 **How to read this file**
 
@@ -11,7 +11,7 @@ _Our plan and decision record for StoryWeave, an adaptive, phonics-aware story g
 | Which tools/libraries are settled and why | §3 Locked Stack |
 | What's undecided and who has to decide it | §4 Open Questions |
 | What happens when | §5 Sprint Calendar |
-| What to build next | §6 Sprints → **Sprint 3** |
+| What to build next | §6 Sprints → **Sprint 4** |
 | Why any past choice was made | §7 Decisions Log |
 
 **Two rules that keep this file honest:**
@@ -37,35 +37,36 @@ StoryWeave listens to a child (grades 1–3) read aloud, uses speech recognition
 
 ---
 
-## 2. Current State (2026-10-26, start of Sprint 3)
+## 2. Current State (2026-11-07, end of Sprint 3)
 
 _What is true in `dev` right now. Update this section at every sprint boundary._
 
 ### In one sentence
 
-The whole path works in the browser on one machine: log in, pick a child, get a validated story, read each line aloud, see every word coloured by its score, and the child's mastery is updated. Two gaps remain: no child's recording has been tried yet (only adult voices), and the LLM almost never writes a story that passes our vocabulary check, so children get a pre-written story.
+The whole path works in the browser on one machine: create an account or log in by email, pick a child, get a story the LLM wrote inside our vocabulary, read each line aloud, see every word coloured by its score, and the child's mastery picks the patterns of the next story. Two gaps remain: no child's recording has been tried yet (only adult voices), and the PINs are still placeholders.
 
 ### What works (checked by running it)
 
 | Area | State |
 |---|---|
 | Local setup | Docker Postgres and the FastAPI backend run together. `GET /health` returns `{"status":"ok"}` and `/docs` shows every route. |
-| Database | 13 tables at Alembic head `9cde937f7a48`, on local Docker and on Neon `dev`. Both hold the vocabulary seed (9 patterns, 316 words, 108 word-pattern links) and the dev fixtures (one caregiver, Mia, Leo and one story, with fixed ids). Neon `production` is untouched. |
-| API routes | Working: `GET /health`, `POST /children`, `GET /caregivers/{id}/children`, `POST /sessions`, `POST /sessions/{id}/lines/{n}/audio`, `POST /stories/generate`, `GET /stories/{id}`. Still 501 (Sprint 3): `POST /caregivers`, `POST /caregivers/{id}/session` and the dashboard. |
+| Database | 13 tables at Alembic head `9cde937f7a48`, on local Docker and on Neon `dev`. Both hold the vocabulary seed (9 patterns, 846 words of which 297 are sight words, 378 word-pattern links; Neon `dev` re-seeded 2026-11-05) and the dev fixtures (one caregiver, Mia, Leo and one story, with fixed ids). Neon `production` is untouched. |
+| API routes | Working: `GET /health`, `POST /children`, `GET /caregivers/{id}/children`, `POST /sessions`, `POST /sessions/{id}/lines/{n}/audio`, `POST /stories/generate`, `GET /stories/{id}`, `GET /children/{id}/dashboard` (2026-11-02), `POST /caregivers` and `POST /caregivers/session` (login by email, 2026-11-04). |
 | Scoring (Michael) | Azure Speech scores each word as `mastered`, `shaky` or `missed`. Every word is saved to `reading_attempt` and each pattern word updates the child's `phonics_mastery`. Tested through the real route with a computer-generated voice. Three bugs were found by the first real calls and fixed (see the Decisions Log, 2026-10-22 and 2026-10-23). A child's real recording has not been tried. |
-| Difficulty (Shokhina) | `select_difficulty_target` picks the patterns for the next story: patterns the child has mastered (score ≥ 0.8 over ≥ 5 attempts) to reinforce, plus the next 2 unmastered patterns in teaching order. A new child gets the first two patterns. This is the simple version; Sprint 3 replaces it. |
-| Story generation (Shokhina) | `POST /stories/generate` asks Claude Haiku 4.5 for a story, checks every word against the seeded vocabulary, retries up to 3 times with the rejected words fed back, and falls back to the best-matching pre-written story if all 3 fail. The story is saved (`story`, `story_line`, `story_pattern`, status `validated`) and the response says whether it came from the LLM or a fallback. Each LLM call times out after 15 seconds, and empty or oversized drafts are rejected. |
-| Frontend (Hailey) | Every screen is built: login, child picker, the reading flow and the parent dashboard. The child side uses the real backend: children, story generation, sessions and the audio upload, with the fixture ids so it works on any machine. After a line is read, each word turns mint (`mastered`) or coral (`shaky` or `missed`). The parent dashboard still shows sample data (now one set per fixture child), and login and PINs are still placeholders (`admin` / `123`, PIN `1234`). Adding a child accepts grades 1–3, the same range as the backend. The "Pick a story" titles on the start screen are placeholders; Start always generates a new story. |
-| Tests | 126 backend tests pass on local Docker, and `ruff check` is clean. Tests that need a database skip with a message when Postgres is not running. No test calls the real Azure or Anthropic APIs. The frontend type-checks and lints cleanly; it has no tests. |
+| Difficulty (Shokhina) | `select_difficulty_target` picks the patterns for the next story (real body, 2026-11-05): up to 2 mastered patterns to reinforce, the shakiest ones first, plus the next 2 unmastered patterns in teaching order. Mastered means at least 5 attempts and a confidence of at least 0.8, where confidence `(correct + 1) / (attempts + 2)` counts a short run for less. A new child gets the first two patterns. Spaced repetition is Sprint 4. |
+| Story generation (Shokhina) | `POST /stories/generate` asks Claude Haiku 4.5 for a story, checks every word against the seeded vocabulary, retries up to 3 times by asking the model to edit its rejected draft, and falls back to the best-matching pre-written story if all 3 fail. The story is saved (`story`, `story_line`, `story_pattern`, status `validated`) and the response says whether it came from the LLM or a fallback. Each LLM call times out after 15 seconds, and empty or oversized drafts are rejected. With the 846-word seed, 10 of 10 test stories came from the LLM rather than a fallback (2026-11-05, local Docker). |
+| Frontend (Hailey) | Every screen is built: login, child picker, the reading flow and the parent dashboard. The child side uses the real backend: children, story generation, sessions and the audio upload, for whichever caregiver is logged in. After a line is read, each word turns mint (`mastered`) or coral (`shaky` or `missed`). The parent dashboard reads real data from `GET /children/{id}/dashboard` (2026-11-02). Login is real as of 2026-11-04 (email lookup, no password), and the login screen has a Create account mode; the PINs are still placeholders (PIN `1234`). Adding a child accepts grades 1–3, the same range as the backend. The start screen has just a Start button, which always generates a new story (the placeholder story picker was removed 2026-11-01). |
+| Tests | 180 backend tests pass on local Docker (checked on `dev` 2026-11-07). Tests that need a database skip with a message when Postgres is not running. No test calls the real Azure or Anthropic APIs. The frontend builds (`tsc -b` + Vite) and lints cleanly; it has no tests. |
 
 ### What does not work yet
 
-- **The parent side isn't connected.** The dashboard shows sample data until its endpoint exists (Sprint 3), and adding a child from the dashboard is the only parent action that reaches the backend.
-- **The LLM path is almost never used.** On 2026-10-22, 0 of 6 route calls and 0 of 10 direct runs passed the vocabulary check, and 2 more route calls on 2026-10-23 also fell back. The model keeps using words we haven't seeded (ocean, water, happy, friend, invented names). The fallback means a child still always gets a valid story. This is Open Question 17, for Sprint 3.
+- **PINs aren't connected.** Both PIN gates are still placeholders (PIN `1234`). The PIN policy (Open Question 13, Gate G7) is not decided, so the PIN routes moved to Sprint 4 week 1. Login works by email since 2026-11-04.
 - **No child's recording has been scored.** Adult voices work; a child's speech may score differently, and Michael's labelled-sample test doesn't exist yet.
-- **No login and no dashboard data.** Caregiver creation, login and the dashboard endpoint are Sprint 3. The dev fixtures stand in for login.
+- **No usability session has been held.** A testing plan is drafted (not yet in the repo); the sessions are Sprint 4 week 1.
+- **The engine has no memory of time.** It can't tell a pattern practised yesterday from one practised a month ago; spaced repetition needs a `last_practised_at` column (Sprint 4 week 1).
+- **The login token isn't checked.** `POST /caregivers/session` returns a token, but no other route checks it yet.
 - **A saved story doesn't remember whether it was a fallback** (Open Question 16, decided response-only for now).
-- **`main` matches `dev` as of 2026-10-23** (PR #25). It is brought up by a merge-commit PR at each milestone; the next one is the end of Sprint 3.
+- **`main` is behind `dev`.** It last matched on 2026-10-23 (PR #25). The end-of-Sprint 3 merge-commit PR from `dev` is still to open (Sprint 4 week 1).
 
 ---
 
@@ -86,12 +87,12 @@ Quick-reference summary. Full rationale for each lives in §7 Decisions Log.
 | Local dev database | Docker Compose (one `docker-compose.yml` at repo root) — **retained, with a narrowed job**: running the test suite and offline/throwaway work. Tests must not run against the shared Neon database. | **Locked** (narrowed 2026-10-09) |
 | External APIs | Azure Speech (speech-to-text + pronunciation assessment), Open Library (book/vocab metadata), Merriam-Webster (dictionary/thesaurus for controlled-vocabulary checks) | Azure Speech selected 2026-10-13 (replaces Speechace); Open Library and Merriam-Webster remain planned |
 | Story-generation LLM | Anthropic Claude, Haiku 4.5 tier (`claude-haiku-4-5-20251001`), isolated behind `generate_story_draft(...)` | **Locked** (2026-10-07, Open Question 5) |
-| Frontend routing | A `useState` screen switch — **no** `react-router-dom`. Does **not** imply a data-fetching choice (Open Question 1 is still open). | **Locked** (2026-10-08, Hailey) |
+| Frontend routing | A `useState` screen switch — **no** `react-router-dom`. Does **not** imply a data-fetching choice (that was Open Question 1, closed 2026-11-01: plain `fetch` through `request()`). | **Locked** (2026-10-08, Hailey) |
 | Git integration branch | `dev` — feature branches are cut from `dev` and PRs target `dev`. `main` is the stable branch, updated from `dev` by a **merge-commit** PR at milestones (never squash or rebase those PRs). | **Locked** (2026-10-08; reaffirmed 2026-10-19) |
 | Backend testing | `pytest` | **Locked** (in use) |
 | Backend lint/format | Ruff (lint + format) | **Locked** (in use) |
 | Frontend lint | ESLint (scaffolded in `frontend/`) | Locked (pre-existing) |
-| Frontend testing | Vitest + React Testing Library | **Proposed** — confirm in Sprint 3 (§6) |
+| Frontend testing | Vitest + React Testing Library | **Proposed** — confirm or drop in Sprint 4 week 1 (§6) |
 
 ---
 
@@ -99,20 +100,15 @@ Quick-reference summary. Full rationale for each lives in §7 Decisions Log.
 
 One table, newest first within each group. Resolved items move to §7 Decisions Log with a date rather than being deleted, so the "why" survives.
 
-**On the numbering:** a number is never reused or renumbered, so "Open Question 9" always means the same thing. That's why there are gaps: 3–7, 9 and 10 are resolved.
+**On the numbering:** a number is never reused or renumbered, so "Open Question 9" always means the same thing. That's why there are gaps: every number missing from the table is resolved and listed under the table.
 
 | # | Question | Owner | Blocks | Decide by |
 |---|---|---|---|---|
-| **1** | **Frontend state/data-fetching approach** — plain `fetch` + Context vs. TanStack Query vs. Redux/Zustand. Hailey's `useState`-routing call does **not** cover this; routing ≠ data-fetching. **Update 2026-10-21:** `UXbranch` already uses plain `fetch` through one `request()` wrapper (`frontend/src/api/client.ts`) with no data-fetching library, which is a de facto answer; Hailey to confirm so the question can be closed. **Update 2026-10-28:** the Sprint 2 wiring shipped on that wrapper, so this no longer blocks anything; it only needs closing. | Hailey | Nothing now (the wiring is done) | **Overdue** — carried to Sprint 3, Gate G2 |
-| **12** | **What is the login model** — a profile picker with no password, or real accounts? The 2026-09-30 decision (OQ6) chose a profile picker, but Hailey's general-login screen makes it concrete: does that screen list profiles to tap, or is it a credential form? Determines what the login screen calls and whether `caregiver` needs credential columns at all. | All three | The login screen's API wiring and the `POST /caregivers` / `POST /caregivers/{id}/session` routes | **Overdue** — carried to Sprint 3, Gate G5; needed before the login routes |
-| **17** | **How do we get the LLM to pass the vocabulary check?** Today nearly every draft is rejected and the child gets a fallback story (see §2). Options: seed more words (needs the word-list sign-off, G1, and affects scoring), a stricter or example-based prompt, feeding back every word rejected so far rather than only the last attempt's, more than 3 attempts, or accepting fallbacks for the demo. Whatever we try gets measured before and after (5+ runs each). Raised 2026-10-22; deferred to Sprint 3 on 2026-10-23. **Update 2026-10-30:** the first lever (prompt rules + edit-the-draft retry) raised the pass rate from 0/10 to 8/10, but the passing stories have broken grammar ("the frog thank the fish") because word endings are not allowed. Endings and more seeded words are next. **Update 2026-10-30 (later):** endings are seeded (local Docker); the grammar is fixed, every remaining rejection is an ordinary unseeded word, and the candidate list for G1 is in `sprint3_word_list_candidates.md`. | Shokhina | Personalised stories (interests, varied content) | **Sprint 3** |
-| **11** | **Should `GET /caregivers/{child_id}/dashboard` be renamed?** Caregiver-named but keyed on a child id, returning child data. Free to change now (it's a 501 stub nothing consumes), expensive once the UI calls it. Deliberately not decided unilaterally by the route's author. **Update 2026-10-28:** decide the response shape at the same time. The frontend's proposed `Dashboard` type (`frontend/src/api/types.ts`) uses camelCase (`lastStory`, `workingOn`, `tryAtHome`), while every other API response is snake_case and `api/children.ts` maps the names. Either the backend returns snake_case and `api/dashboard.ts` maps it the same way, or we agree on an exception. **Update 2026-10-30:** Shokhina favours renaming it, since the route is keyed on the child id; waiting on Michael and Hailey. | All three | Nothing yet — but cost rises the day it's implemented | **Before the dashboard endpoint is written** (Sprint 3, Gate G5) |
-| **13** | **PIN policy details** — (a) must a child's PIN differ from the parent's, enforced server-side? (b) what is the parent's own PIN-reset path? (c) what does a throttled/locked-out response look like, given the child side must never lock a child out while the parent side should? | Shokhina (routes/schema) + Hailey (UX) | The verify-route implementations | **Sprint 3, Gate G7** (moved with the PIN feature — see Sprint 2's scope cut) |
-| **16** | **Should a story record whether the LLM or a fallback template produced it?** The pipeline already returns `source` (`llm` / `fallback`) and the attempt count, but the `story` table has no column for it, so persisting it needs a nullable column and an Alembic migration on a schema Michael owns (and a migration on Neon `dev`). The alternatives are to return it in the `POST /stories/generate` response only, or to leave it unrecorded. Shokhina wants fallback stories flagged eventually. Raised 2026-10-21. **Decided 2026-10-22: response-only for now** (`source` and `attempts` in the `POST /stories/generate` response, nothing stored). Reopen with Michael if a stored flag is wanted, which needs the nullable column and a migration on Neon `dev`. | Shokhina + Michael (schema) | Persisting the flag; not the generate route itself | **Decided for Sprint 2 (response-only); stored flag deferred** |
+| **13** | **PIN policy details** — (a) must a child's PIN differ from the parent's, enforced server-side? (b) what is the parent's own PIN-reset path? (c) what does a throttled/locked-out response look like, given the child side must never lock a child out while the parent side should? | Shokhina (routes/schema) + Hailey (UX; hashing and throttling choices) | The verify-route implementations | **Overdue** — not decided in Sprint 3; carried to Sprint 4 week 1, Gate G7 |
 | **2** | **Deployment/hosting target.** | All three | Nothing until Sprint 4 | Sprint 4 |
 | **8** | **COPPA / children's-data considerations.** Recording a child's voice and storing a phonics profile triggers children's-online-privacy obligations (parental consent, data minimization, no behavioral tracking) *if* StoryWeave is ever used by real families outside the classroom demo. **Updated 2026-10-09:** the Neon decision makes this slightly less hypothetical — children's reading data now leaves the laptop and is stored with a third-party host, so the honest answer to "where does a child's data live" is no longer "only on our machines." Still not a semester-grading concern; use test/placeholder child names during usability sessions rather than real ones, which costs nothing and is the whole mitigation at this scale. | — | Nothing | Out of semester scope; awareness only |
 
-**Resolved:** #3 audio capture, #4 Speechace pattern, #6 auth/session model, #7 sprint calendar (all 2026-09-30); #10 `uv.lock` revision (2026-10-06); #5 LLM provider (2026-10-07); #9 the Neon files / hosted database (2026-10-09); #14 the word-score colours (2026-10-23); #15 the shared-database convention (2026-10-30). See §7.
+**Resolved:** #3 audio capture, #4 Speechace pattern, #6 auth/session model, #7 sprint calendar (all 2026-09-30); #10 `uv.lock` revision (2026-10-06); #5 LLM provider (2026-10-07); #9 the Neon files / hosted database (2026-10-09); #14 the word-score colours (2026-10-23); #15 the shared-database convention (2026-10-30); #1 frontend data fetching and #11 the dashboard route and response shape (both 2026-11-01); #12 the login model (2026-11-04, email lookup with no password); #17 the LLM vocabulary pass rate (closed 2026-11-07: 0/10 → 10/10 over three measured levers, 2026-10-30 to 2026-11-05); #16 whether a story records that it was a fallback (decided 2026-10-22: in the `POST /stories/generate` response only, nothing stored; moved here 2026-11-09; reopening it needs a nullable column and a migration, with Michael). See §7.
 
 ---
 
@@ -124,8 +120,8 @@ Dates come from the proposal's Gantt and have **not** moved. Only sprint *conten
 |---|---|---|---|---|
 | 1 | Sep 28 – Oct 9 | Oct 2 | Foundations: schema, contracts, seams, skeleton UI | **Closed** — partially delivered |
 | 2 | Oct 9 – Oct 23 | Oct 16 | Integration: make one path work end to end | **Closed** (formally 2026-10-28) — all four done-items met on one machine |
-| 3 | **Oct 23 – Nov 6** | **Oct 30** | **Adaptive engine, generation quality, PINs, usability testing** | **In progress** |
-| 4 | Nov 6 – Nov 20 | Nov 13 | Week 1: absorb slippage. Week 2: hard feature freeze, polish | Not started |
+| 3 | Oct 23 – Nov 6 | Oct 30 | Adaptive engine, generation quality, PINs, usability testing | **Closed** 2026-11-06 — 3 of 6 done-items met; PINs, a child's recording and the usability session carried |
+| 4 | **Nov 6 – Nov 20** | **Nov 13** | **Week 1: absorb slippage. Week 2: hard feature freeze, polish** | **In progress** |
 | Wrap-up | Nov 20 → | — | Project site, testing results, video, final presentation | Not started |
 
 Per-sprint deliverables each include: mid-sprint review, Peer Eval N, Journal Entry N, and a sprint report.
@@ -209,109 +205,116 @@ _Oct 9 – Oct 23, mid-sprint review Oct 16. The work ended Oct 23; the sprint w
 
 ---
 
-### Sprint 3 — Adaptive Engine, Generation Quality, PINs & Usability Testing _(Oct 23 – Nov 6, mid-sprint review Oct 30)_
+### Sprint 3 — CLOSED 2026-11-06 _(retrospective — no open work lives here)_
 
-**Status:** In progress (cut 2026-10-28). **Primary owner:** Shokhina (adaptive engine + generation quality + the testing plan, including the expanded child-tester panel).
+_Oct 23 – Nov 6, mid-sprint review Oct 30. Cut 2026-10-28; the work ended Nov 6 and the close-out was recorded Nov 7. Its open work moved to Sprint 4 week 1._
 
 **The goal:** _the story a child gets adapts to how they actually read, the LLM's vocabulary pass rate is measured and improved, the parent and child PINs are real, and children have tried it in a moderated session._
 
-This is the sprint where the product stops being "first pass" and starts being adaptive. **Capacity warning, stated up front:** this sprint holds the work displaced from Sprint 2 *plus* its original usability-testing focus *plus* PINs *plus* Sprint 2's leftovers, and most of it lands on one owner. Work each list roughly top to bottom, and expect the tail to land in Sprint 4 week 1's absorption capacity — that is what the absorption week exists for, not a failure mode.
+The sprint opened with a capacity warning: it held Sprint 2's displaced work, its own usability-testing focus, PINs and Sprint 2's leftovers, mostly on one owner, with the tail expected to land in Sprint 4 week 1. That is what happened.
 
 #### Definition of done
 
-| # | Item | Status |
+| # | Item | Status at close |
 |---|---|---|
-| 1 | Parent and child PINs are verified server-side, throttled, and never returned by any endpoint | Not started |
-| 2 | `select_difficulty_target` has its real body; `DifficultyTarget` is unchanged | Not started |
-| 3 | The LLM's vocabulary pass rate (Open Question 17) is measured before and after at least one change, with the numbers in the Decisions Log | **Done 2026-10-30** (0/10 → 8/10, then endings for grammar; see the Decisions Log). More words next. |
-| 4 | A child's recording is scored, and a labelled sample is scored and compared to its labels | Carried from Sprint 2 |
-| 5 | The parent dashboard shows real data from its endpoint | Carried from Sprint 2 |
-| 6 | At least one moderated usability session with a child is held and its findings recorded | Not started |
+| 1 | Parent and child PINs are verified server-side, throttled, and never returned by any endpoint | **Not done.** The PIN policy (Open Question 13, Gate G7) was never decided, so no PIN code was written. Carried. |
+| 2 | `select_difficulty_target` has its real body; `DifficultyTarget` is unchanged | **Done 2026-11-05** (confidence-weighted mastery, no migration) |
+| 3 | The LLM's vocabulary pass rate (Open Question 17) is measured before and after at least one change, with the numbers in the Decisions Log | **Done, three times.** 0/10 → 8/10 (prompt rules + edit-the-draft retry, 2026-10-30); word endings for grammar (2026-10-30); 6/10 → 10/10 with the signed-off words (2026-11-05). Open Question 17 closed. |
+| 4 | A child's recording is scored, and a labelled sample is scored and compared to its labels | **Not done** (Michael); carried a second time |
+| 5 | The parent dashboard shows real data from its endpoint | **Done 2026-11-02** (Hailey) |
+| 6 | At least one moderated usability session with a child is held and its findings recorded | **Not done.** A testing plan is drafted (not yet in the repo); the sessions are Sprint 4 week 1. |
 
-#### Gates
+#### What landed
 
-Decisions, not code. Each blocks the work named after it, so hold them early in the sprint.
+| Area | Planned | Landed |
+|---|---|---|
+| Gates | G1, G2, G5, G6, G7 | **4 of 5.** G6 Neon sharing rules (2026-10-30), G2 frontend data fetching (2026-11-01), G5 dashboard shape and login model (2026-11-01 and 2026-11-04), G1 word-list sign-off (2026-11-05, after slipping three sprints). **G7, the PIN policy, was never held**, which blocked all PIN work. |
+| Shokhina — PINs and login | `pin_hash` migration, verify routes, throttling, PINs at creation, reset flows, the login routes | **No PIN work**, because it waited on G7. The login routes were built by Hailey instead (2026-11-04). |
+| Shokhina — Components 2 & 3 | Open Question 17, Neon re-seed, engine schema, the real engine, generation quality and interest-matching, the testing plan | **Open Question 17 done and closed**: three levers, each measured before and after (0/10 → 8/10, endings for grammar, 6/10 → 10/10). **Neon `dev` re-seeded** with the signed-off words (2026-11-05; 846 words, 378 links). **The real engine** (2026-11-05), with no migration: confidence needs only the existing counts, and spaced repetition slipped. **Not started:** interest-matching and the Open Library / Merriam-Webster vocabulary expansion. **The testing plan** is drafted but not yet in the repo. |
+| Michael — Component 1 | A child's recording and a labelled sample, phoneme-level attribution, decoding vs articulation, the tester with a lisp, the 2026-10-23 review items | Wrote the shared-Neon rules (Open Question 15, 2026-10-30) and built Merriam-Webster pronunciation help on the `dictionary` branch (not merged). **None of the five Component 1 items reached `dev`.** |
+| Hailey — Component 4 | The dashboard on real data, PIN screens, the login screen, the list-stories call, the fixture id, usability support, the dev-data scripts | **Done except the PIN screens** (they wait on the PIN routes) **and usability support** (no session yet). The dashboard endpoint and real data (2026-11-02), the story picker removed and list-stories dropped (2026-11-01), login and Create account (2026-11-04, including the two login routes from Shokhina's list), the `/health` line (2026-11-01), and `dev_fixtures.py` kept. |
+| All three | The joint run through the UI; the usability sessions | **Neither held.** |
+| Tests | Engine tests, PIN tests, a frontend testing decision | **Engine tests done** (pure unit tests plus DB tests). PIN tests wait on the PINs. No frontend testing decision. **180 backend tests pass at close** (126 at the start). |
+| Housekeeping | `/health` in the frontend, a per-machine check, old Azure branches, `hello.ts` and `.agents/`, the `main` PR | `/health` done (Hailey). The two `feature/azure-scoring-*` branches are gone from GitHub. Not done: Michael's and Shokhina's per-machine checks, removing `hello.ts` and `.agents/` (still in `dev`), and the `dev` → `main` PR. |
 
-- [ ] **G1 — Sign off the word list** _(carried from Sprint 2)_. The list is seeded; Michael's and Hailey's sign-off is still missing. Seeding more words, one of the Open Question 17 levers, waits on this. *(all three)*
-- [ ] **G2 — Close Open Question 1 (frontend data fetching)** _(carried)_. Hailey confirms the plain `fetch` + `request()` wrapper already in use. *(Hailey)*
-- [ ] **G5 — Decide Open Questions 11 (dashboard route name and response shape) and 12 (login model), and who builds the dashboard endpoint** _(carried, extended)_. Blocks the dashboard endpoint and the login routes. *(all three)*
-- [x] **G6 — Decide Open Question 15 (rules for sharing one Neon database)** _(decided 2026-10-30)_. Local Docker for daily work; temporary Neon branches for PR/migration testing; shared Neon `dev` for integration/demo only. Any developer may migrate or re-seed shared `dev` only after explicit approval from all three. *(Michael + all three)*
-- [ ] **G7 — Decide Open Question 13 (PIN policy).** Blocks the verify routes. *(Shokhina + Hailey)*
+#### Close-out notes for the sprint report _(written Nov 7)_
 
-#### Shokhina — PINs and login (do these first: they gate the usability sessions, where siblings reading under each other's profiles becomes a real problem)
+**Result.** The product is now adaptive, and the LLM path works. A child's mastery picks the patterns of the next story through the real engine, and with the signed-off words 10 of 10 test stories came from the LLM instead of a pre-written fallback. Login is real. Three of the six done-items were met (#2, #3, #5).
 
-- [ ] Schema migration: `pin_hash` on `caregiver` and on `child`, hashed server-side, never stored or returned in plaintext — consistent with the existing hashed `caregiver_session.token_hash`. On Michael's schema, so reviewed by him; after G6.
-- [ ] `POST /caregivers/{id}/verify-pin` and `POST /children/{id}/verify-pin`. Verification happens server-side only; the client never receives a PIN or hash to compare locally. After G7.
-- [ ] Attempt throttling/lockout on both verify routes with a defined throttled-response shape. A 4-digit PIN is 10,000 combinations, so client-side-only protection is not protection. The child side never locks a child out (UI decision); the parent side does.
-- [ ] Accept a PIN at `POST /caregivers` and `POST /children` creation time, and guarantee no list or read endpoint ever returns a PIN or its hash.
-- [ ] Reset flows: the parent resets a child's PIN from the dashboard; the parent's own path per Open Question 13.
-- [ ] `POST /caregivers` and `POST /caregivers/{id}/session` (still 501), in the shape G5 decides. These replace the fixture caregiver id in `frontend/src/api/config.ts`.
+**What each of us delivered.**
+- **Shokhina:** Open Question 17 from 0/10 to 10/10 over three measured levers (prompt rules and edit-the-draft retry, word endings, the signed-off word list); the G1 sign-off and the 846-word seed on local Docker and Neon `dev`; the real difficulty engine and its tests; a draft testing plan; the Sprint 2 close-out and the Sprint 3 plan.
+- **Hailey:** the dashboard endpoint and the dashboard on real data; login by email and Create account, with both login routes; the story picker removed; the `/health` line; closing G2 and G5.
+- **Michael:** the shared-Neon rules (Open Question 15, G6); Merriam-Webster pronunciation help on a branch, not yet merged.
 
-#### Shokhina — Components 2 & 3: make it adaptive
+**What was hard or unexpected.**
+- **Measuring before and after made the trade-offs visible.** The word-endings lever lowered the pass rate (8/10 → 5/10) but fixed the grammar. Without the numbers, that would have looked like a regression or gone unnoticed. The signed-off words then took it to 10/10.
+- **Meetings still lag code.** G1 took three sprints and closed on the second-to-last day. G7 was never held, and that one missing decision blocked a whole done-item.
+- **The capacity warning was right.** PINs were listed first but blocked on G7, so the sprint's time went to generation and the engine instead.
+- **Several branches edited `planning.md` at once.** The merges kept both sides' facts but duplicated the Open Question 17 row, which was cleaned up on 2026-11-07.
 
-- [x] **Open Question 17 first:** pick one lever, measure the pass rate before and after (5+ runs each, with probe scripts kept out of the repo), and record the numbers in the Decisions Log. _(2026-10-30: prompt rules + edit-the-draft retry, 0/10 → 8/10.)_
-- [x] Open Question 17, second lever: word endings (`-s`/`-es`, `-ed`, `-ing`) seeded as their own rows. _(2026-10-30: grammar fixed, 5/10; local Docker only.)_
-- [ ] Open Question 17, third lever: seed more words from `sprint3_word_list_candidates.md` once Michael and Hailey sign it off (G1), then measure.
-- [ ] Re-seed Neon `dev` with the endings (and later words) once G6 says who re-seeds and Michael has been told; the seed change affects his scoring lookups.
-- [ ] Schema additions for the difficulty engine: mastery-confidence scoring and spaced-repetition selection state.
-- [ ] The real adaptive difficulty engine, replacing the naive `select_difficulty_target()` body. The body only — `DifficultyTarget` is frozen.
-- [ ] Generation quality and interest-matching, including the Open Library / Merriam-Webster–driven vocabulary expansion.
-- [ ] The usability testing plan, including the expanded child-tester panel. Use placeholder names, not real ones (Open Question 8).
+**Carried into Sprint 4 week 1** (moved 2026-11-07; each now lives only in Sprint 4 below): G7 and all the PIN work (Shokhina routes, Hailey screens, the PIN tests); a child's recording and the labelled sample, phoneme-level attribution, decoding vs articulation, the tester with a lisp and the 2026-10-23 review items (Michael); spaced repetition (`last_practised_at`); interest-matching and vocabulary expansion; the testing plan into the repo; the joint run and the usability sessions; the frontend testing decision; the per-machine checks; `hello.ts` and `.agents/`; the `dev` → `main` PR.
 
-#### Michael — Component 1: prove the scoring on children
-
-- [ ] Score a child's real recording, and add a component test with a labelled sample: a known recording with labelled mistakes, scored and compared to the labels. _(carried from Sprint 2)_
-- [ ] Phoneme-level attribution: map phoneme-level scores to phonics patterns, replacing today's word-level attribution (Sprint 3 scope since the 2026-09-30 architecture review).
-- [x] Decoding-vs-articulation classification and articulation-flag honouring: pattern-targeted articulation errors remain visible, are classified as articulation, and do not lower that pattern's mastery; unflagged word-level errors remain unclassified. Phoneme-only flags await phoneme-level attribution.
-- [ ] Validate the pipeline against the child tester with a lisp, and implement the resulting revisions.
-- [ ] From the 2026-10-23 code review: log the cause before the audio route returns a 502; add an upload size limit; decide whether `reading_attempt.expected_word` keeps punctuation.
-
-#### Hailey — Component 4: the parent side and PINs
-
-- [ ] The dashboard on real data, once its endpoint exists (after G5). _(carried from Sprint 2)_
-- [ ] PIN screens call the verify routes instead of comparing locally, and show the throttled response.
-- [ ] The login screen calls the real login routes (after G5), replacing `admin` / `123`.
-- [ ] Confirm the list-stories endpoint is dropped, and decide what the start screen's placeholder "Pick a story" titles become: the picked title is currently ignored, and Start always generates a new story. _(carried)_
-- [ ] Before merging `feature/end-to-end-connection`: its 2026-10-28 commit sets `CAREGIVER_ID` to an id that exists on one machine only. Keep the fixture id until the login routes replace it.
-- [ ] Support the usability sessions, and make the dashboard revisions they call for.
-- [ ] With Shokhina: keep or merge the two dev-data scripts (`seed_dev_data.py`, random ids; `dev_fixtures.py`, fixed ids). Nothing uses the random-id caregiver now.
-
-#### All three
-
-- [ ] Joint run of the full path through the UI, all three of us present. _(carried)_
-- [ ] Moderated usability sessions with children.
-
-#### Tests
-
-- [ ] Component 2: the real engine's choices, tested against fixed mastery rows.
-- [ ] PINs: a wrong PIN is rejected, throttling kicks in, and no endpoint returns a PIN or hash.
-- [ ] Confirm Vitest + React Testing Library with one smoke test, or decide not to test the frontend this semester. _(carried)_
-
-#### Housekeeping
-
-- [ ] Show `/health` in the frontend as a first wiring check. _(carried from Sprint 1)_
-- [ ] Each of us runs Docker, the backend and the frontend on our own machine and sees `/health` in the browser. _(carried from Sprint 1)_
-- [x] Delete `feature/azure-scoring-service` and `feature/azure-scoring-neon-integration`; everything on them is already in `dev`. *(Michael's OK)*
-- [x] Remove the root `hello.ts` and `.agents/skills/`, both from the Neon setup on 2026-10-05; nothing in the app uses them. *(Michael)*
-- [ ] Bring `main` up from `dev` with a merge-commit PR at the end of the sprint.
-
-#### Not in Sprint 3
-
-- **The instructor view (reach goal) → decided at the Sprint 4 mid-sprint review**, only if the baseline is complete.
-- **Deployment (Open Question 2) → Sprint 4.**
-- **Storing whether a story was a fallback (Open Question 16) → stays response-only** unless reopened with Michael.
-
-**Also due:** mid-sprint review (Oct 30), Peer Eval 3, Journal Entry 3, the sprint report and demo prep.
+**Unchanged by Sprint 3:** the instructor view (reach goal) is still decided at the Sprint 4 mid-sprint review; deployment (Open Question 2) is Sprint 4; whether a story was a fallback stays response-only (Open Question 16).
 
 ---
 
 ### Sprint 4 — Absorption, then Polish & Final Testing _(Nov 6 – Nov 20, mid-sprint review Nov 13)_
 
-**Status:** Not started. **Primary owner:** Hailey (frontend polish, full integration and testing lead).
+**Status:** In progress (started 2026-11-06; Sprint 3's open work moved here 2026-11-07). **Primary owner:** Hailey (frontend polish, full integration and testing lead).
 
 **Deliberately split in half at the mid-sprint review (2026-10-08).**
 
 **Week 1 — Nov 6 to Nov 13: absorption.** Reserved capacity for whatever has slipped out of Sprints 2 and 3, rather than pretending nothing will. Also the decision point on the instructor-view reach goal: build it **only if** the baseline is genuinely complete by the Nov 13 review, and decide it *there* rather than drifting into it.
+
+**Week 1 holds more than one week can finish.** Anything still open at the Nov 13 review either becomes a known limitation in the final presentation or is dropped by a Decisions Log entry; it does not cross into week 2's freeze. Work each list top to bottom.
+
+#### Week 1 gate
+
+- [ ] **G7 — Decide Open Question 13 (PIN policy)** _(carried from Sprint 3)_. Blocks every PIN item below. *(Shokhina + Hailey; Hailey owns the hashing and throttling choices)*
+
+#### Shokhina — week 1 (carried from Sprint 3)
+
+- [ ] PINs, after G7: a `pin_hash` migration on `caregiver` and `child` (Michael reviews it; local Docker, then a temporary Neon branch, then shared `dev` only with all three's approval); `POST /caregivers/{id}/verify-pin` and `POST /children/{id}/verify-pin`, verified server-side only; throttling with a defined throttled response (the child side never locks a child out, the parent side does); a PIN accepted at creation; no endpoint ever returns a PIN or its hash; reset flows per Open Question 13.
+- [ ] Put the testing plan in the repo (drafted 2026-11-06 for the testing-plan assignment).
+- [ ] Spaced repetition: a `last_practised_at` on `phonics_mastery` so the engine can prefer patterns not practised recently. Needs a migration (Michael reviews). Keep the engine's rules unchanged otherwise.
+- [ ] Interest-matching and generation quality, including the Open Library / Merriam-Webster vocabulary expansion. Any change to generation is measured before and after (5+ runs each).
+- [ ] Cleanup from the 2026-11-09 review, before other week-1 work:
+  - [x] README and planning facts brought up to date (2026-11-09).
+  - [ ] Move the two root word-list docs into `docs/`.
+  - [ ] Generation hardening: clean whitespace in LLM lines, count a non-text reply as a bad reply, and don't hold a database transaction open during the LLM calls.
+  - [ ] Seam tests: scoring → engine, and the generate route for a child with mastered patterns.
+  - [ ] Small tidy-ups: rename `test_route_stubs.py`, share `LOCAL_HOSTS`, import from `app.models` everywhere.
+
+#### Michael — week 1 (carried from Sprint 3)
+
+- [ ] Score a child's real recording, and add the labelled-sample test: a known recording with labelled mistakes, scored and compared to the labels. _(carried twice)_
+- [ ] Validate the pipeline against the child tester with a lisp, and implement the resulting revisions.
+- [ ] Phoneme-level attribution, replacing today's word-level attribution.
+- [x] Decoding-vs-articulation classification and articulation-flag honouring.
+
+- [x] Audio route review items (2026-10-23 and 2026-11-09): log the cause before returning a 502; cap uploads at 10 MB; show "not configured" for missing Azure Speech settings or FFmpeg (503); and test 422, 502 and 504 responses. `reading_attempt.expected_word` keeps punctuation from the source story token.
+- [ ] Open a PR for the `dictionary` branch (Merriam-Webster pronunciation help); its latest `dev` changes have now been merged.
+- [x] Remove `hello.ts`, `.agents/skills/` and `skills-lock.json` from the merged branch, as agreed.
+- [x] Make one formatting-only commit with `ruff format` on all 12 files reported by the current `ruff format --check`.
+- [ ] Decide whether a `reading_session` is ever marked `completed` (with `finished_at`); unchanged pending Hailey's decision.
+
+#### Hailey — week 1 (carried from Sprint 3)
+
+- [ ] PIN screens call the verify routes instead of comparing locally, and show the throttled response (after the PIN routes).
+- [ ] Support the usability sessions, and make the dashboard revisions they call for.
+- [ ] Optional, her call: the dashboard's `strongest` can use `is_mastered()` from `difficulty.py`, so it follows the same mastery rule as the engine (see 2026-11-05). **2026-11-09 review: recommended, not optional.** At 4 right out of 5 the same pattern shows as both "strongest" and "working on".
+- [ ] Stop the recording when the reader closes (2026-11-09 review): if a child taps ✕ while recording, the mic stays on, because `useRecorder.ts` has no cleanup on unmount.
+- [ ] Delete `backend/scripts/seed_dev_data.py`, which nothing uses now that `dev_fixtures.py` exists, with a Decisions Log entry (reverses 2026-10-23 "two dev-data scripts stay").
+- [ ] Small cleanup (2026-11-09 review): the unused `frontend/src/assets/*`, the "Hear it" button that only logs, stale comments in `api/client.ts` and `api/types.ts`, whether to keep the mock code now that every `USE_MOCKS` flag is false, and a 409 instead of a 500 when two sign-ups race on one email.
+
+#### All three — week 1
+
+- [ ] Joint run of the full path through the UI, all three of us present. _(carried twice)_
+- [ ] Moderated usability sessions: 2–3 child testers (one with a lisp), a couple of adult testers and at least 2 caregivers, on one laptop running local Docker, placeholder names only (Open Question 8). Michael leads. Findings go in the Decisions Log. _(Sprint 3 done-item #6)_
+- [ ] Each of us runs Docker, the backend and the frontend on our own machine and sees `/health` in the browser. _(Hailey done 2026-11-01; Michael and Shokhina still to confirm.)_
+- [ ] Confirm Vitest + React Testing Library with one smoke test, or decide not to test the frontend this semester.
+- [ ] Bring `main` up from `dev` with a merge-commit PR (due at the end of Sprint 3; opened after the 2026-11-09 cleanup).
+- [ ] Decide what the login token is for: today `POST /caregivers/session` mints one, the frontend discards it and no route checks it. The PIN verify routes are the natural first place to require it (2026-11-09 review).
 
 **Week 2 — Nov 13 to Nov 20: polish and final testing only. A hard feature freeze.** No new features, no absorbed carryover.
 
@@ -564,3 +567,99 @@ We reviewed the whole codebase before closing Sprint 2. Fixes went in as small P
 - **Serialize migrations.** Migration authors test locally and on a temporary Neon branch. If two PRs generate revisions from the same head, merge/apply one first; the other author rebases and regenerates or reconciles the revision against the new head. Stop if `alembic heads` reports multiple heads; do not paper over the conflict with an unreviewed merge revision.
 - **Seed ownership stays with Shokhina; Michael reviews schema/scoring implications.** Anyone can execute the approved shared re-seed under the all-three approval rule. The vocabulary seed remains data-driven and idempotent; fixed demo fixtures stay synthetic. If shared data is damaged, pause writes and take a snapshot; after all-three approval, re-run the seed/fixture scripts or restore/rebuild from a known-good snapshot if those scripts cannot repair it. Never drop tables or hand-edit shared rows.
 - **Test boundary:** pytest and its database-backed validator checks run only on local Docker. Neon branch testing is for migration/seed smoke checks, not for running the test suite. This keeps generated data and test transactions out of the shared integration database.
+
+### 2026-11-01 — Open Question 1 closed: plain `fetch` through `request()`
+
+- **Decision: the frontend keeps plain `fetch` through the one `request()` wrapper in `frontend/src/api/client.ts`, with no data-fetching library** _(Hailey, G2)_. TanStack Query, Redux and Zustand are not adopted.
+- **Why:** this is what the code already does. The whole Sprint 2 wiring (children, stories, sessions, audio, and the dashboard function behind a mock flag) runs on it, and a search of `frontend/src` finds no data-fetching library and no React Context. State stays in components and goes down as props. Loading, error, retry and "ignore a stale response" are a few lines of `useEffect` and state in `ParentDashboard`, which is the part a library would have given us. Fewer dependencies is also easier to explain in the weekly code walkthroughs.
+- **Correction to the question's wording:** it said "plain `fetch` + Context". There is no Context in the code, so the accurate answer is plain `fetch` and props.
+- **Revisit only if** we need response caching, polling, or the same data shown in several places at once. Reopen by a new entry.
+
+### 2026-11-01 — Dashboard route and response shape decided (Open Question 11)
+
+- **The route is renamed to `GET /children/{child_id}/dashboard`** _(Hailey, with Shokhina's preference from 2026-10-30)_. The old `/caregivers/{child_id}/dashboard` was caregiver-named but keyed on a child id and returned child data. It was a 501 stub nothing consumed, so renaming was free.
+- **The response is snake_case, used as it comes** _(Hailey)_, to match every other API response. The `Dashboard` type in `frontend/src/api/types.ts` is now `sessions`, `last_story`, `working_on`, `strongest`, `patterns[{label, fill}]` and `try_at_home`. There is no mapper, the same as `WordScore`. `fill` is percent mastered, 0–100.
+- **`minutes` is dropped.** There is no session duration source on the backend, so the dashboard shows only the number of sessions this week.
+- **Hailey builds the endpoint.** That includes renaming the stub in `backend/app/api/routes/dashboard.py`, converting mastery (0–1) to `fill`, and choosing the rules for `working_on`, `strongest` and `try_at_home`. Those rules still need to be written down when the endpoint is built.
+- **Frontend changed** (`frontend/src/`): the type and mock data in `api/`, the call path in `api/dashboard.ts`, and the field names in `ParentDashboard.tsx`, `ParentHome.tsx` and `WeekSummary.tsx`. The "reading sessions · minutes" line now shows only sessions. `USE_MOCKS.dashboard` stays `true` until the endpoint exists. Type-check, lint and a production build pass.
+- **G5 is only partly done:** Open Question 12 (login model) is still open, so G5 stays unticked.
+
+### 2026-11-01 — Child start screen: story picker removed
+
+- **The picker is gone** _(Hailey)_. The start screen showed three placeholder titles ("The Brave Little Fox", "Space Trip to the Moon", "The Sleepy Dragon"), but the chosen title was never used: `Start` always calls `POST /stories/generate`. A child could think they were choosing a story when they weren't.
+- **The list-stories endpoint is confirmed dropped** (carried from Sprint 2). Nothing on the child side lists existing stories, so there is nothing for a picker to show. If a "read an earlier story" feature comes back, it needs a list route and a new entry.
+- **What changed** (`frontend/src/child-ui/`): `StartScreen.tsx` is now a heading ("Ready to read?") and the Start button, with the placeholder list and its state removed. The picker-only styles are removed from `StartScreen.css`. The parent home empty state now reads "Their first story will show up here" instead of "Pick a story to get started".
+- **Also fixed:** the lint error `react-hooks/set-state-in-effect` in `ParentDashboard.tsx`. The loaded dashboard and the failed flag were two states reset inside the effect. They are now one `result` state tagged with the child and attempt it belongs to, and the dashboard and failed flag are worked out during render. A result for another child or an older attempt counts as "loading", so the previous child's data still never shows under the new name. Behaviour should be unchanged; checked with the type-checker, the linter and a production build.
+
+### 2026-11-02 — Dashboard endpoint built (Open Question 11 follow-through)
+
+- **`GET /children/{child_id}/dashboard` is real** _(Hailey, as decided 2026-11-01)_. It returns 404 for an unknown child. The files are `app/api/routes/dashboard.py` (renamed from the 501 stub), `app/schemas/dashboard.py` (the response, matching `Dashboard` in `frontend/src/api/types.ts`) and `app/services/dashboard.py` (the queries). The frontend flag `USE_MOCKS.dashboard` is now `false`. Tests: `tests/test_dashboard.py` (404, a child with no data, a child with sessions and mastery) and the dashboard path updated in `tests/test_route_stubs.py`. 153 tests pass on local Docker and `ruff check` is clean.
+- **`sessions` counts only sessions with at least one scored word** _(Hailey)_. It counts `reading_session` rows started in the last 7 days that have at least one `reading_attempt`. A session that was opened and never read doesn't count. We can't filter on status instead, because nothing sets a session to `completed` or sets `finished_at`: every session is still `in_progress`.
+- **`try_at_home` uses recently `shaky` or `missed` words** _(Hailey)_. Up to 5 distinct words from the child's newest 50 such attempts, newest first, lowercased with punctuation stripped (apostrophes kept), since `reading_attempt.expected_word` keeps the line's punctuation. If there are none, it falls back to the example words of the `working_on` patterns. "Recently" means newest, with no date cutoff.
+- **The other fields follow `fullstackconnection.md`.** `patterns` has one entry per mastery row with attempts, in `sequence_order`, with `fill = round(score × 100)`. `working_on` is the stretch patterns from `select_difficulty_target`, so the dashboard follows the engine when Component 2 replaces its body. `strongest` is the mastered pattern with the highest score (a tie goes to the earlier pattern), using `MASTERY_THRESHOLD` and `MIN_ATTEMPTS` from `difficulty.py`. `last_story` is the title from the child's most recent session, even if nothing was scored in it.
+- **Checked by hand on local Docker:** the counts for Mia, Leo and Sammy matched the database (one session with scored words each). Leo's other three sessions were opened and never read, so they are not counted.
+- **Two small parent-side layout fixes** (`ParentDashboard.css`): the Add child form's labels now sit above their inputs, so "Grade (1 to 3)" is no longer cut off by the number input, and the pattern label column is wider so "a_e (silent-e)" stays on one line.
+
+### 2026-11-04 — Login model decided and built (Open Question 12)
+
+- **Login is an email lookup with no password** _(Hailey)_. The parent types their email; the backend finds the caregiver and returns their id and a new session token. This keeps the 2026-09-30 profile-picker model (no credential check) and needs no migration, since `caregiver.email` and `caregiver_session` already exist. Real passwords were ruled out for Sprint 3: they need a `password_hash` migration on Neon `dev` (blocked by G6) and a hashing approach, with two days left.
+- **`POST /caregivers/{id}/session` is replaced by `POST /caregivers/session` with `{email}`.** The login screen never knows the caregiver id up front, so a route keyed on it had no caller. `POST /caregivers` takes `{display_name, email}` and returns a session too (201, or 409 if the email is taken). Emails are stored and matched lowercased and trimmed.
+- **Tokens follow the 2026-09-30 rule:** `secrets.token_urlsafe(32)`, returned once, with only its SHA-256 hash stored in `token_hash`. `expires_at` is 30 days out and still not checked. No route checks the token yet; every other route still trusts the caregiver id it is given. The frontend does not keep the token.
+- **Known trade-off:** a 404 for an unknown email shows whether an email has an account. Acceptable for a login with no password, where knowing the email is already enough to log in.
+- **What changed:** backend `app/api/routes/caregivers.py`, new `app/schemas/caregivers.py`, new `tests/test_caregivers.py`, and the stub test removed from `tests/test_route_stubs.py` (156 tests pass, `ruff check` clean). Frontend: new `api/caregivers.ts` (`login()` and `getCaregiverId()`, the id held in a module variable, so a refresh logs out), `CAREGIVER_ID` removed from `api/config.ts`, `api/children.ts` uses the logged-in id, and `LoginScreen.tsx` has one Email field instead of `admin` / `123`. Build and lint pass.
+- **Not done:** a sign-up screen (use `POST /caregivers` in Swagger), checking the token on other routes, PINs.
+
+### 2026-11-04 (later) — Create account on the login screen
+
+- **New caregivers can sign up in the app** _(Hailey)_. The login screen has a second mode, switched by a text link ("New here? Create an account" / "Already have an account? Log in"). It asks for a name and an email and calls `POST /caregivers`, which already returns a session, so a new account is logged in straight away and lands on the entry screen with no children. A taken email shows "That email already has an account" (409). This replaces the "use Swagger" note in the entry above.
+- **A mode on the login screen, not a new screen:** it reuses the form's layout and styles, and `App.tsx` needed no change, since a new account follows the same path as a login.
+- **What changed** (`frontend/src/`): `createAccount()` in `api/caregivers.ts`, the mode and name field in `login/LoginScreen.tsx`, and a `.login-switch` link style in `login/LoginScreen.css`. Build and lint pass, and Hailey checked it by hand: sign up, add a child, a duplicate email, and logging back in.
+- **Not included:** a parent PIN at sign-up (waits on the PIN work; the placeholder `1234` stays) and email confirmation.
+
+### 2026-11-05 — Word list signed off (G1) and the candidate words seeded locally
+
+- **The team signed off `sprint3_word_list_candidates.md`** _(reported by Shokhina; Michael and Hailey agreed)_, and G1 is ticked. Shokhina's answers to the four sign-off questions: (1) keep the † words, since they help the generator (decision B noise accepted); (2) `friend` is a **sight word**, and `other`, `mother`, `brother` and `father` stay **TH-tagged**; (3) Group B stays unpatterned, but we track those words; (4) add general kid-interest words as well.
+- **What was seeded** (`scripts/seed_data.py`, local Docker only): Group A words added to their pattern lists (a word in two patterns, such as `shape`, `frame`, `chimp` and `blimp`, is tagged with both, decision E); Group B and 26 general interest words (bear, horse, puppy, bike, boat, pizza, tent, zoo and so on) in the new `UNPATTERNED_WORDS`; `friend` in the new `SIGHT_EXTRA_WORDS`; the new verbs and nouns added to `REGULAR_VERBS`, `IRREGULAR_VERBS` and `PLURAL_NOUNS`, so `friends`, `splashed` and `swimming` exist. `dragon` was left out because an existing validator test uses it as the example unseeded word, and it is a two-syllable word with untaught sounds. Local Docker went from 562 to **846 words** (+284), 295 to 297 sight words, and 229 to 378 word-pattern links (+149, 0 removed). A second run changes nothing. Neon `dev` is still at 316 words and 108 links.
+- **Unpatterned words are tracked.** `unpatterned_words()` in `seed_data.py` lists every word that is neither a sight word nor tagged with a pattern (188 now). The seed script prints that count after every run, and a test pins the function. Reading these words changes no mastery, so they never show on the dashboard.
+- **Neon `dev` re-seed:** the team agreed that Shokhina runs it (2026-11-05). G6 still applies: dry run first, a temporary Neon branch first, and Michael is told, because the seed affects his scoring lookups.
+- **Tests:** 156 pass on local Docker (6 new seed tests), and `ruff check` and `ruff format --check` are clean on the changed files.
+- **Open Question 17, third lever measured (same day, same model).** Live Haiku 4.5 on local Docker, 10 stories per round with Mia's patterns (SH, CH, TH, FR) and her interests on every other run. BEFORE allowed only the 562 words `origin/dev` seeds; AFTER allowed the 846 words now seeded. Result: **6/10 → 10/10 stories from the LLM.** Before, no story passed on the first draft (1 on the second, 5 on the third, 4 fell back); after, 4 passed on the first draft and 6 on the second, none needed a third. At n=10 the 6 → 10 gap alone could be chance, but the first-draft passes (0 → 4) show the model needs fewer fix-up retries. The probe script is kept outside the repo. This is local Docker only: until Neon `dev` is re-seeded, a story generated against Neon still sees 316 words and will mostly fall back.
+
+### 2026-11-05 — Real difficulty engine (Component 2, option A: no migration)
+
+- **The real `select_difficulty_target` body is in** (`app/services/difficulty.py`). `DifficultyTarget` and the signature are unchanged; no schema change, so Neon needs nothing. Option A was chosen to fit the sprint: it uses only the existing `phonics_mastery` columns.
+- **Confidence-weighted mastery.** `confidence(correct, attempts) = (correct + 1) / (attempts + 2)`: one extra right and one extra wrong read pull a short run toward 0.5, so 5 out of 5 is 0.857, not 1.0. A pattern is mastered when `attempts >= MIN_ATTEMPTS` (5) **and** confidence `>= MASTERY_THRESHOLD` (0.8). Both constants keep their names, because the dashboard imports them. The engine reads `correct_count` and `attempts_count`, not the stored `mastery_score` (Michael's scoring still writes that as the plain share). Effect: 4 out of 5 is no longer mastered (5/7 = 0.714); 9 out of 10 still is (0.833); 7 out of 8 is exactly 0.8 and counts.
+- **Reinforce:** at most 2 mastered patterns, the ones with the **lowest** confidence, so the shakiest mastered patterns get practised (a stand-in for spaced repetition until it has a timestamp). A tie goes to the earlier pattern; the list is returned in `sequence_order` order. Before, every mastered pattern was reinforced, so a strong reader could send all 9 to the generator.
+- **Stretch:** unchanged, the first 2 unmastered patterns in `sequence_order`, including ones tried only a few times and ones that slipped back below the threshold. A new child gets no reinforce and the first two patterns, as before.
+- **Generation (Open Question 17 rule) not re-measured, on purpose.** The generator code is unchanged. A new child's request is identical, and for other children the request only gets shorter (at most 4 patterns, the same count as the 2026-11-05 probe's SH, CH, TH, FR).
+- **Dashboard not changed.** `strongest` in `dashboard.py` (Hailey's) still uses the plain stored score, so in a rare case (4 out of 5) it can name a pattern the engine still stretches. `is_mastered(correct, attempts)` is now importable from `difficulty.py` if Hailey wants the dashboard to follow the engine; her call, after the demo.
+- **Slips to Sprint 4 week 1:** spaced repetition and the `last_practised_at` column (needs Michael's schema review and a temporary Neon branch).
+- **Tests:** 174 pass on local Docker (pure unit tests on `confidence`, `is_mastered` and `pick_patterns`, which run without a database, plus the DB tests updated for the new rule). Hailey's `test_dashboard.py` (still on her branch) also passes against the new engine. `ruff` is clean on the changed files.
+
+### 2026-11-05 — Neon `dev` re-seeded with the signed-off words
+
+- **Shared Neon `dev` now holds the Sprint 3 seed** _(Shokhina, with the team's agreement that she runs it; G6)_. It was run first on a temporary Neon branch, then on `dev`. Result: 9 patterns, **846 words, 297 sight words, 378 word-pattern links** (+270 links, 0 removed), and 188 words with no pattern. Neon `dev` and local Docker now hold the same vocabulary, so a story generated against Neon sees the same 846 words that gave 10/10 on 2026-11-05.
+- **No schema change.** Alembic is still at `9cde937f7a48`. The seed is idempotent, so running it again changes nothing.
+- **This affects Michael's scoring lookups:** more words now map to patterns, so more words a child reads update mastery.
+
+### 2026-11-07 — Sprint 3 closed; Sprint 4 week 1 takes the carryover
+
+- **Sprint 3 closed 2026-11-06 with 3 of 6 done-items met** (#2 the real engine, #3 the LLM pass rate, #5 the dashboard on real data). PINs (#1), a child's recording (#4) and a usability session (#6) are not done. See the Sprint 3 retrospective in §6.
+- **Every open Sprint 3 item moved to Sprint 4 week 1**, so it now lives in one place only. Week 1 holds more than a week can finish; anything still open at the Nov 13 review becomes a known limitation or is dropped by a new entry, and none of it crosses into week 2's freeze.
+- **Open Question 17 closed** _(Shokhina)_. The question was how to get the LLM past the vocabulary check; it went from 0/10 to 10/10 stories over three measured levers. The rule stays: any later change to generation is measured before and after (5+ runs each).
+- **Open Question 12 moved to Resolved** in §4 (decided 2026-11-04; the row had stayed in the open table). **The duplicate Open Question 17 row** left by the 2026-11-06 merges is gone.
+- **§2 brought up to date:** the 846-word seed on both databases, 180 backend tests, and the frontend build and lint clean (all checked on `dev` 2026-11-07).
+
+### 2026-11-09 — End-of-Sprint-3 code review; cleanup before Sprint 4 week 1
+
+- **A whole-codebase review ran before any week-1 work** _(Shokhina, with a Claude session)_. State on `dev` (`1ecb1d6`): 180 backend tests pass on local Docker, `ruff check` is clean, the frontend lints and builds, Alembic has one head (`9cde937f7a48`). `ruff format --check` fails on 13 files, none of them Shokhina's alone. `main` is 33 commits behind `dev`. Each finding for Michael or Hailey is now a Sprint 4 week-1 item in their list; Shokhina's are the cleanup item in hers.
+- **The cleanup goes in small chunks, each its own commit and PR into `dev`, then the `dev` → `main` merge-commit PR** _(Shokhina)_. Order: docs accuracy; moving the two root word-list docs into `docs/` (with `git mv`, so their history is kept); generation hardening; seam tests; small tidy-ups.
+- **Chunk 1, docs accuracy.** The README was out of date: it still said 316 and 562 words, the old engine rule, a sample-data dashboard, login `admin` / `123` and "nearly every story is a fallback". It now describes login by email, the real engine rule, the dashboard and today's placeholders, without word counts that go stale. Its commands were run on a local backend against local Docker: `/health`, login with `fixtures.caregiver@example.com`, the fixture children, Mia's dashboard and the fixture story. In this file: Open Question 16 moves to Resolved (decided 2026-10-22, nothing changes); the frontend-testing row points at Sprint 4; Michael's `hello.ts` item no longer claims the `dictionary` branch removes `.agents/`, because it doesn't (checked with `git ls-tree`); one missing blank line before the first 2026-11-05 heading was added (whitespace only, no entry was edited).
+- **`seed_dev_data.py` waits for Hailey** _(Shokhina)_: it is her file, so she deletes it; the 2026-10-23 "two dev-data scripts stay" decision is reversed by the entry she adds then.
+
+### 2026-11-10 — audio route review follow-up
+
+- **Audio uploads are capped at 10 MB.** Invalid audio remains a 422, assessment timeouts a 504, and upstream Azure failures a 502 whose cause is logged. Missing Azure Speech settings or FFmpeg are reported as "not configured" with a 503.
+- **`reading_attempt.expected_word` keeps the source story token, including punctuation.** Punctuation is removed only for vocabulary matching; persistence and the response retain the token as written.
+- **Reading-session completion is deferred pending Hailey's decision.** No automatic completion behavior is added until the team agrees what event finishes a session.
+- **Remove the unused root `hello.ts`, `.agents/skills/` and `skills-lock.json`** from the dictionary branch; none is used by the app.

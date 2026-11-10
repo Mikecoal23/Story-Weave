@@ -186,8 +186,17 @@
   margin-bottom: 0.75rem;
 }
 
+/* Wide enough for the longest pattern label ("a_e (silent-e)") on one line */
 .pd-bar-label {
-  width: 3.5rem;
+  width: 8.5rem;
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-weight: 480;
+}
+
+.pd-bar-value {
+  width: 3rem;
+  text-align: right;
   font-weight: 480;
 }
 
@@ -226,6 +235,11 @@
   border-radius: 50px;
 }
 
+/* Word chips are labels; only the "Mark as practiced" button is clickable */
+span.pd-chip {
+  cursor: default;
+}
+
 .pd-chips {
   display: flex;
   flex-wrap: wrap;
@@ -241,6 +255,13 @@
   flex-direction: column;
   gap: 0.75rem;
   max-width: 22rem;
+}
+
+/* Label text on its own line above the input, so a narrow input can't sit beside it */
+.pd-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
 }
 
 .pd-input {
