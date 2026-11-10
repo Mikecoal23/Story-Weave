@@ -28,7 +28,7 @@ def test_audio_route_scores_persists_and_returns_completed_result(monkeypatch) -
         words=[WordScore(expected_word="ship", recognized_word="ship", status="mastered")]
     )
     score_audio = Mock(return_value=score)
-    persist_score = Mock()
+    persist_score = Mock(return_value=score)
     monkeypatch.setattr(sessions_route, "score_line_audio", score_audio)
     monkeypatch.setattr(sessions_route, "process_line_score", persist_score)
 
@@ -53,6 +53,7 @@ def test_audio_route_scores_persists_and_returns_completed_result(monkeypatch) -
                     "expected_word": "ship",
                     "recognized_word": "ship",
                     "status": "mastered",
+                    "error_classification": None,
                 }
             ]
         },

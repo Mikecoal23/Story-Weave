@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.words import normalize_word
 from app.models import (
+    ArticulationFlag,
     PhonicsMastery,
     ReadingAttempt,
     ReadingSession,
@@ -175,7 +176,7 @@ def process_line_score(
     reading_session_id: UUID,
     story_line_id: UUID,
     score_result: ScoreResult,
-) -> None:
+) -> ScoreResult:
     """Persist a line's score and update the child's phonics mastery."""
     reading_session = session.get(ReadingSession, reading_session_id)
     if reading_session is None:
@@ -204,16 +205,42 @@ def process_line_score(
         if pattern_id is not None:
             vocabulary_by_word[vocabulary_word.word][1].add(pattern_id)
 
+    # Current scoring is word-level, so pattern-targeted flags can be matched against the
+    # word's vocabulary links. Phoneme-only flags need phoneme-level Azure results.
+    flagged_pattern_ids = {
+        pattern_id
+        for pattern_id in session.scalars(
+            select(ArticulationFlag.phonics_pattern_id).where(
+                ArticulationFlag.child_id == reading_session.child_id,
+                ArticulationFlag.phonics_pattern_id.is_not(None),
+            )
+        ).all()
+        if pattern_id is not None
+    }
+
     # Mastery rows touched in this call. With autoflush off, `session.get` can't see a row
     # added earlier in the same call, so a second word with the same pattern would insert a
     # duplicate (child_id, phonics_pattern_id) row.
     mastery_by_pattern: dict[int, PhonicsMastery] = {}
 
+    classified_words: list[WordScore] = []
     for word_index, word_score in enumerate(score_result.words, start=1):
         word_key = _normalize_scored_word(word_score.expected_word)
         vocabulary_entry = vocabulary_by_word.get(word_key)
         vocabulary_word = vocabulary_entry[0] if vocabulary_entry else None
         pattern_ids = vocabulary_entry[1] if vocabulary_entry else set()
+        flagged_word_patterns = pattern_ids & flagged_pattern_ids
+        error_classification = (
+            "articulation"
+            if word_score.status != "mastered" and flagged_word_patterns
+            else "unclassified"
+            if word_score.status != "mastered"
+            else None
+        )
+        classified_word = word_score.model_copy(
+            update={"error_classification": error_classification}
+        )
+        classified_words.append(classified_word)
 
         session.add(
             ReadingAttempt(
@@ -226,6 +253,7 @@ def process_line_score(
                     vocabulary_word.vocabulary_word_id if vocabulary_word else None
                 ),
                 result_status=word_score.status,
+                error_classification=error_classification,
             )
         )
 
@@ -233,6 +261,10 @@ def process_line_score(
             continue
 
         for pattern_id in pattern_ids:
+            # A flagged articulation error must not count against decoding mastery, but a
+            # correctly read flagged word is still evidence of mastery.
+            if pattern_id in flagged_pattern_ids and word_score.status != "mastered":
+                continue
             mastery = mastery_by_pattern.get(pattern_id) or session.get(
                 PhonicsMastery,
                 (reading_session.child_id, pattern_id),
@@ -254,3 +286,4 @@ def process_line_score(
             mastery.mastery_score = mastery.correct_count / mastery.attempts_count
 
     session.flush()
+    return ScoreResult(words=classified_words)

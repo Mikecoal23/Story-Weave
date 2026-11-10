@@ -200,6 +200,11 @@ class ReadingAttempt(Base):
             "result_status IN ('mastered', 'shaky', 'missed')",
             name="ck_reading_attempt_result_status",
         ),
+        CheckConstraint(
+            "error_classification IS NULL OR "
+            "error_classification IN ('articulation', 'unclassified')",
+            name="ck_reading_attempt_error_classification",
+        ),
         Index("ix_reading_attempt_session_line", "reading_session_id", "story_line_id"),
     )
 
@@ -217,6 +222,7 @@ class ReadingAttempt(Base):
         ForeignKey("vocabulary_word.vocabulary_word_id", ondelete="SET NULL")
     )
     result_status: Mapped[str] = mapped_column(String(20), nullable=False)
+    error_classification: Mapped[str | None] = mapped_column(String(20))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 

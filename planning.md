@@ -262,7 +262,7 @@ Decisions, not code. Each blocks the work named after it, so hold them early in 
 
 - [ ] Score a child's real recording, and add a component test with a labelled sample: a known recording with labelled mistakes, scored and compared to the labels. _(carried from Sprint 2)_
 - [ ] Phoneme-level attribution: map phoneme-level scores to phonics patterns, replacing today's word-level attribution (Sprint 3 scope since the 2026-09-30 architecture review).
-- [ ] Decoding-vs-articulation classification and articulation-flag honouring (deferred out of Sprint 1 per the proposal).
+- [x] Decoding-vs-articulation classification and articulation-flag honouring: pattern-targeted articulation errors remain visible, are classified as articulation, and do not lower that pattern's mastery; unflagged word-level errors remain unclassified. Phoneme-only flags await phoneme-level attribution.
 - [ ] Validate the pipeline against the child tester with a lisp, and implement the resulting revisions.
 - [ ] From the 2026-10-23 code review: log the cause before the audio route returns a 502; add an upload size limit; decide whether `reading_attempt.expected_word` keeps punctuation.
 
@@ -291,8 +291,8 @@ Decisions, not code. Each blocks the work named after it, so hold them early in 
 
 - [ ] Show `/health` in the frontend as a first wiring check. _(carried from Sprint 1)_
 - [ ] Each of us runs Docker, the backend and the frontend on our own machine and sees `/health` in the browser. _(carried from Sprint 1)_
-- [ ] Delete `feature/azure-scoring-service` and `feature/azure-scoring-neon-integration`; everything on them is already in `dev`. *(Michael's OK)*
-- [ ] Keep or remove the root `hello.ts` and `.agents/skills/`, both from the Neon setup on 2026-10-05; nothing in the app uses them. *(Michael)*
+- [x] Delete `feature/azure-scoring-service` and `feature/azure-scoring-neon-integration`; everything on them is already in `dev`. *(Michael's OK)*
+- [x] Remove the root `hello.ts` and `.agents/skills/`, both from the Neon setup on 2026-10-05; nothing in the app uses them. *(Michael)*
 - [ ] Bring `main` up from `dev` with a merge-commit PR at the end of the sprint.
 
 #### Not in Sprint 3

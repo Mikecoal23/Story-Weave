@@ -7,6 +7,7 @@ class WordScore(BaseModel):
     expected_word: str
     recognized_word: str | None = None
     status: Literal["mastered", "shaky", "missed"]
+    error_classification: Literal["articulation", "unclassified"] | None = None
 
 
 class ScoreResult(BaseModel):

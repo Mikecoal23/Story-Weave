@@ -19,6 +19,11 @@ One reading session, step by step, and where each step lives in the code:
 5. **Update what the child knows.** Each scored word updates the child's mastery of its phonics pattern, which feeds step 2 for the next story.
    `process_line_score` in `backend/app/services/scoring.py`
 
+Errors on words linked to a child's flagged articulation pattern remain visible but are
+classified as articulation and excluded from that pattern's decoding-mastery counts.
+Unflagged word-level errors are stored as unclassified, not assumed to be decoding errors.
+Phoneme-only flags await phoneme-level assessment and attribution.
+
 ## What works today
 
 - **Working:** the whole loop above, in the browser, against a real database, Azure Speech and Claude. After a child reads a line, each word turns mint (read well) or coral (try again).

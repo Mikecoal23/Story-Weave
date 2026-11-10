@@ -22,6 +22,7 @@ export type WordScore = {
   expected_word: string
   recognized_word: string | null
   status: 'mastered' | 'shaky' | 'missed'
+  error_classification?: 'articulation' | 'unclassified' | null
 }
 
 export type ScoreResult = {

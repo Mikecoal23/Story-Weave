@@ -66,6 +66,7 @@ def test_line_audio_response_always_includes_status() -> None:
                     "expected_word": "read",
                     "recognized_word": "read",
                     "status": "mastered",
+                    "error_classification": None,
                 }
             ]
         },

@@ -62,6 +62,8 @@ function SentenceReader({ line, scores }: Props) {
     }
   }, [scores, showWord])
 
+  const selectedScore = scores?.find((score) => score.expected_word === selectedWord)
+
   return (
     <section className="reader">
       <h2 className="prompt">Read this sentence</h2>
@@ -72,6 +74,11 @@ function SentenceReader({ line, scores }: Props) {
             <button
               aria-label={`Look up ${word}`}
               aria-pressed={selectedWord === word}
+              title={
+                scores?.[i]?.error_classification === 'articulation'
+                  ? 'Articulation flag: this result will not lower phonics mastery'
+                  : undefined
+              }
               className={`word${colorClass(scores?.[i])}${selectedWord === word ? ' selected' : ''}`}
               onClick={() => void showWord(scores?.[i]?.expected_word ?? word)}
               type="button"
@@ -104,6 +111,12 @@ function SentenceReader({ line, scores }: Props) {
           </div>
           {loading && <p>Looking up the word…</p>}
           {error && <p role="alert">{error}</p>}
+          {selectedScore?.error_classification === 'articulation' && (
+            <p>This matches an articulation flag and won’t count against phonics mastery.</p>
+          )}
+          {selectedScore?.error_classification === 'unclassified' && (
+            <p>We can’t tell what made this word tricky yet.</p>
+          )}
           {entry && <p className="definition-text">{entry.definition}</p>}
         </aside>
       )}

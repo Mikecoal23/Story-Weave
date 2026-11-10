@@ -59,6 +59,6 @@ def upload_line_audio(
     except RuntimeError as error:
         raise HTTPException(status_code=502, detail="Azure Speech assessment failed") from error
 
-    process_line_score(db, session_id, story_line.id, score_result)
+    score_result = process_line_score(db, session_id, story_line.id, score_result)
     db.commit()
     return LineAudioResponse(status="complete", result=score_result)

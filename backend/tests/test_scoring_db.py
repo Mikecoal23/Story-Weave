@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from support import throwaway_schema
 
 from app.models import (
+    ArticulationFlag,
     Caregiver,
     Child,
     PhonicsMastery,
@@ -40,6 +41,7 @@ TABLES = [
     StoryLine.__table__,
     ReadingSession.__table__,
     ReadingAttempt.__table__,
+    ArticulationFlag.__table__,
 ]
 
 
@@ -107,3 +109,44 @@ def test_a_second_line_adds_to_the_existing_mastery_row(db: Session) -> None:
     process_line_score(db, reading.id, line.id, all_mastered)
 
     assert mastery_by_code(db, reading)["blend_bl"] == (4, 4)
+
+
+def test_flagged_pattern_error_is_persisted_but_not_counted_in_mastery(db: Session) -> None:
+    reading, line = start_reading(db, "ship")
+    pattern = db.scalar(select(PhonicsPattern).where(PhonicsPattern.code == "digraph_sh"))
+    assert pattern is not None
+    db.add(
+        ArticulationFlag(
+            child_id=reading.child_id,
+            phonics_pattern_id=pattern.phonics_pattern_id,
+            note="Known articulation difficulty",
+        )
+    )
+    db.flush()
+
+    result = process_line_score(
+        db,
+        reading.id,
+        line.id,
+        ScoreResult(
+            words=[WordScore(expected_word="ship", recognized_word="sip", status="shaky")]
+        ),
+    )
+    attempt = db.scalar(
+        select(ReadingAttempt).where(ReadingAttempt.reading_session_id == reading.id)
+    )
+
+    assert result.words[0].error_classification == "articulation"
+    assert attempt is not None
+    assert attempt.error_classification == "articulation"
+    assert attempt.result_status == "shaky"
+    assert mastery_by_code(db, reading) == {}
+
+    correct_result = process_line_score(
+        db,
+        reading.id,
+        line.id,
+        ScoreResult(words=[WordScore(expected_word="ship", status="mastered")]),
+    )
+    assert correct_result.words[0].error_classification is None
+    assert mastery_by_code(db, reading)["digraph_sh"] == (1, 1)
