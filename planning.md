@@ -92,7 +92,7 @@ Quick-reference summary. Full rationale for each lives in §7 Decisions Log.
 | Backend testing | `pytest` | **Locked** (in use) |
 | Backend lint/format | Ruff (lint + format) | **Locked** (in use) |
 | Frontend lint | ESLint (scaffolded in `frontend/`) | Locked (pre-existing) |
-| Frontend testing | Vitest + React Testing Library | **Proposed** — confirm in Sprint 3 (§6) |
+| Frontend testing | Vitest + React Testing Library | **Proposed** — confirm or drop in Sprint 4 week 1 (§6) |
 
 ---
 
@@ -100,16 +100,15 @@ Quick-reference summary. Full rationale for each lives in §7 Decisions Log.
 
 One table, newest first within each group. Resolved items move to §7 Decisions Log with a date rather than being deleted, so the "why" survives.
 
-**On the numbering:** a number is never reused or renumbered, so "Open Question 9" always means the same thing. That's why there are gaps: 3–7, 9 and 10 are resolved.
+**On the numbering:** a number is never reused or renumbered, so "Open Question 9" always means the same thing. That's why there are gaps: every number missing from the table is resolved and listed under the table.
 
 | # | Question | Owner | Blocks | Decide by |
 |---|---|---|---|---|
 | **13** | **PIN policy details** — (a) must a child's PIN differ from the parent's, enforced server-side? (b) what is the parent's own PIN-reset path? (c) what does a throttled/locked-out response look like, given the child side must never lock a child out while the parent side should? | Shokhina (routes/schema) + Hailey (UX; hashing and throttling choices) | The verify-route implementations | **Overdue** — not decided in Sprint 3; carried to Sprint 4 week 1, Gate G7 |
-| **16** | **Should a story record whether the LLM or a fallback template produced it?** The pipeline already returns `source` (`llm` / `fallback`) and the attempt count, but the `story` table has no column for it, so persisting it needs a nullable column and an Alembic migration on a schema Michael owns (and a migration on Neon `dev`). The alternatives are to return it in the `POST /stories/generate` response only, or to leave it unrecorded. Shokhina wants fallback stories flagged eventually. Raised 2026-10-21. **Decided 2026-10-22: response-only for now** (`source` and `attempts` in the `POST /stories/generate` response, nothing stored). Reopen with Michael if a stored flag is wanted, which needs the nullable column and a migration on Neon `dev`. | Shokhina + Michael (schema) | Persisting the flag; not the generate route itself | **Decided for Sprint 2 (response-only); stored flag deferred** |
 | **2** | **Deployment/hosting target.** | All three | Nothing until Sprint 4 | Sprint 4 |
 | **8** | **COPPA / children's-data considerations.** Recording a child's voice and storing a phonics profile triggers children's-online-privacy obligations (parental consent, data minimization, no behavioral tracking) *if* StoryWeave is ever used by real families outside the classroom demo. **Updated 2026-10-09:** the Neon decision makes this slightly less hypothetical — children's reading data now leaves the laptop and is stored with a third-party host, so the honest answer to "where does a child's data live" is no longer "only on our machines." Still not a semester-grading concern; use test/placeholder child names during usability sessions rather than real ones, which costs nothing and is the whole mitigation at this scale. | — | Nothing | Out of semester scope; awareness only |
 
-**Resolved:** #3 audio capture, #4 Speechace pattern, #6 auth/session model, #7 sprint calendar (all 2026-09-30); #10 `uv.lock` revision (2026-10-06); #5 LLM provider (2026-10-07); #9 the Neon files / hosted database (2026-10-09); #14 the word-score colours (2026-10-23); #15 the shared-database convention (2026-10-30); #1 frontend data fetching and #11 the dashboard route and response shape (both 2026-11-01); #12 the login model (2026-11-04, email lookup with no password); #17 the LLM vocabulary pass rate (closed 2026-11-07: 0/10 → 10/10 over three measured levers, 2026-10-30 to 2026-11-05). See §7.
+**Resolved:** #3 audio capture, #4 Speechace pattern, #6 auth/session model, #7 sprint calendar (all 2026-09-30); #10 `uv.lock` revision (2026-10-06); #5 LLM provider (2026-10-07); #9 the Neon files / hosted database (2026-10-09); #14 the word-score colours (2026-10-23); #15 the shared-database convention (2026-10-30); #1 frontend data fetching and #11 the dashboard route and response shape (both 2026-11-01); #12 the login model (2026-11-04, email lookup with no password); #17 the LLM vocabulary pass rate (closed 2026-11-07: 0/10 → 10/10 over three measured levers, 2026-10-30 to 2026-11-05); #16 whether a story records that it was a fallback (decided 2026-10-22: in the `POST /stories/generate` response only, nothing stored; moved here 2026-11-09; reopening it needs a nullable column and a migration, with Michael). See §7.
 
 ---
 
@@ -279,6 +278,12 @@ The sprint opened with a capacity warning: it held Sprint 2's displaced work, it
 - [ ] Put the testing plan in the repo (drafted 2026-11-06 for the testing-plan assignment).
 - [ ] Spaced repetition: a `last_practised_at` on `phonics_mastery` so the engine can prefer patterns not practised recently. Needs a migration (Michael reviews). Keep the engine's rules unchanged otherwise.
 - [ ] Interest-matching and generation quality, including the Open Library / Merriam-Webster vocabulary expansion. Any change to generation is measured before and after (5+ runs each).
+- [ ] Cleanup from the 2026-11-09 review, before other week-1 work:
+  - [x] README and planning facts brought up to date (2026-11-09).
+  - [ ] Move the two root word-list docs into `docs/`.
+  - [ ] Generation hardening: clean whitespace in LLM lines, count a non-text reply as a bad reply, and don't hold a database transaction open during the LLM calls.
+  - [ ] Seam tests: scoring → engine, and the generate route for a child with mastered patterns.
+  - [ ] Small tidy-ups: rename `test_route_stubs.py`, share `LOCAL_HOSTS`, import from `app.models` everywhere.
 
 #### Michael — week 1 (carried from Sprint 3)
 
@@ -286,15 +291,20 @@ The sprint opened with a capacity warning: it held Sprint 2's displaced work, it
 - [ ] Validate the pipeline against the child tester with a lisp, and implement the resulting revisions.
 - [ ] Phoneme-level attribution, replacing today's word-level attribution.
 - [ ] Decoding-vs-articulation classification and articulation-flag honouring.
-- [ ] The 2026-10-23 code-review items: log the cause before the audio route returns a 502; add an upload size limit; decide whether `reading_attempt.expected_word` keeps punctuation.
-- [ ] Open a PR for the `dictionary` branch (Merriam-Webster pronunciation help) or say it waits.
-- [ ] Keep or remove the root `hello.ts` and `.agents/skills/` (the `dictionary` branch already removes `.agents/`).
+- [ ] The 2026-10-23 code-review items: log the cause before the audio route returns a 502; add an upload size limit; decide whether `reading_attempt.expected_word` keeps punctuation. From the 2026-11-09 review: also say "not configured" when the Azure key or FFmpeg is missing (today both show as "Azure Speech assessment failed"), and test the 422, 502 and 504 responses.
+- [ ] Open a PR for the `dictionary` branch (Merriam-Webster pronunciation help) or say it waits. It is 27 commits behind `dev` (2026-11-09), so merge `dev` into it first.
+- [ ] Keep or remove the root `hello.ts`, `.agents/skills/` and `skills-lock.json`. All three are still on `dev` **and** on the `dictionary` branch (checked 2026-11-09, despite that branch's commit message).
+- [ ] One formatting-only commit: `ruff format` on the 11 files of yours that fail `ruff format --check` (2026-11-09 review).
+- [ ] Decide whether a `reading_session` is ever marked `completed` (with `finished_at`); today nothing sets it. _(with Hailey)_
 
 #### Hailey — week 1 (carried from Sprint 3)
 
 - [ ] PIN screens call the verify routes instead of comparing locally, and show the throttled response (after the PIN routes).
 - [ ] Support the usability sessions, and make the dashboard revisions they call for.
-- [ ] Optional, her call: the dashboard's `strongest` can use `is_mastered()` from `difficulty.py`, so it follows the same mastery rule as the engine (see 2026-11-05).
+- [ ] Optional, her call: the dashboard's `strongest` can use `is_mastered()` from `difficulty.py`, so it follows the same mastery rule as the engine (see 2026-11-05). **2026-11-09 review: recommended, not optional.** At 4 right out of 5 the same pattern shows as both "strongest" and "working on".
+- [ ] Stop the recording when the reader closes (2026-11-09 review): if a child taps ✕ while recording, the mic stays on, because `useRecorder.ts` has no cleanup on unmount.
+- [ ] Delete `backend/scripts/seed_dev_data.py`, which nothing uses now that `dev_fixtures.py` exists, with a Decisions Log entry (reverses 2026-10-23 "two dev-data scripts stay").
+- [ ] Small cleanup (2026-11-09 review): the unused `frontend/src/assets/*`, the "Hear it" button that only logs, stale comments in `api/client.ts` and `api/types.ts`, whether to keep the mock code now that every `USE_MOCKS` flag is false, and a 409 instead of a 500 when two sign-ups race on one email.
 
 #### All three — week 1
 
@@ -302,7 +312,8 @@ The sprint opened with a capacity warning: it held Sprint 2's displaced work, it
 - [ ] Moderated usability sessions: 2–3 child testers (one with a lisp), a couple of adult testers and at least 2 caregivers, on one laptop running local Docker, placeholder names only (Open Question 8). Michael leads. Findings go in the Decisions Log. _(Sprint 3 done-item #6)_
 - [ ] Each of us runs Docker, the backend and the frontend on our own machine and sees `/health` in the browser. _(Hailey done 2026-11-01; Michael and Shokhina still to confirm.)_
 - [ ] Confirm Vitest + React Testing Library with one smoke test, or decide not to test the frontend this semester.
-- [ ] Bring `main` up from `dev` with a merge-commit PR (due at the end of Sprint 3).
+- [ ] Bring `main` up from `dev` with a merge-commit PR (due at the end of Sprint 3; opened after the 2026-11-09 cleanup).
+- [ ] Decide what the login token is for: today `POST /caregivers/session` mints one, the frontend discards it and no route checks it. The PIN verify routes are the natural first place to require it (2026-11-09 review).
 
 **Week 2 — Nov 13 to Nov 20: polish and final testing only. A hard feature freeze.** No new features, no absorbed carryover.
 
@@ -603,6 +614,7 @@ We reviewed the whole codebase before closing Sprint 2. Fixes went in as small P
 - **A mode on the login screen, not a new screen:** it reuses the form's layout and styles, and `App.tsx` needed no change, since a new account follows the same path as a login.
 - **What changed** (`frontend/src/`): `createAccount()` in `api/caregivers.ts`, the mode and name field in `login/LoginScreen.tsx`, and a `.login-switch` link style in `login/LoginScreen.css`. Build and lint pass, and Hailey checked it by hand: sign up, add a child, a duplicate email, and logging back in.
 - **Not included:** a parent PIN at sign-up (waits on the PIN work; the placeholder `1234` stays) and email confirmation.
+
 ### 2026-11-05 — Word list signed off (G1) and the candidate words seeded locally
 
 - **The team signed off `sprint3_word_list_candidates.md`** _(reported by Shokhina; Michael and Hailey agreed)_, and G1 is ticked. Shokhina's answers to the four sign-off questions: (1) keep the † words, since they help the generator (decision B noise accepted); (2) `friend` is a **sight word**, and `other`, `mother`, `brother` and `father` stay **TH-tagged**; (3) Group B stays unpatterned, but we track those words; (4) add general kid-interest words as well.
@@ -636,3 +648,10 @@ We reviewed the whole codebase before closing Sprint 2. Fixes went in as small P
 - **Open Question 17 closed** _(Shokhina)_. The question was how to get the LLM past the vocabulary check; it went from 0/10 to 10/10 stories over three measured levers. The rule stays: any later change to generation is measured before and after (5+ runs each).
 - **Open Question 12 moved to Resolved** in §4 (decided 2026-11-04; the row had stayed in the open table). **The duplicate Open Question 17 row** left by the 2026-11-06 merges is gone.
 - **§2 brought up to date:** the 846-word seed on both databases, 180 backend tests, and the frontend build and lint clean (all checked on `dev` 2026-11-07).
+
+### 2026-11-09 — End-of-Sprint-3 code review; cleanup before Sprint 4 week 1
+
+- **A whole-codebase review ran before any week-1 work** _(Shokhina, with a Claude session)_. State on `dev` (`1ecb1d6`): 180 backend tests pass on local Docker, `ruff check` is clean, the frontend lints and builds, Alembic has one head (`9cde937f7a48`). `ruff format --check` fails on 13 files, none of them Shokhina's alone. `main` is 33 commits behind `dev`. Each finding for Michael or Hailey is now a Sprint 4 week-1 item in their list; Shokhina's are the cleanup item in hers.
+- **The cleanup goes in small chunks, each its own commit and PR into `dev`, then the `dev` → `main` merge-commit PR** _(Shokhina)_. Order: docs accuracy; moving the two root word-list docs into `docs/` (with `git mv`, so their history is kept); generation hardening; seam tests; small tidy-ups.
+- **Chunk 1, docs accuracy.** The README was out of date: it still said 316 and 562 words, the old engine rule, a sample-data dashboard, login `admin` / `123` and "nearly every story is a fallback". It now describes login by email, the real engine rule, the dashboard and today's placeholders, without word counts that go stale. Its commands were run on a local backend against local Docker: `/health`, login with `fixtures.caregiver@example.com`, the fixture children, Mia's dashboard and the fixture story. In this file: Open Question 16 moves to Resolved (decided 2026-10-22, nothing changes); the frontend-testing row points at Sprint 4; Michael's `hello.ts` item no longer claims the `dictionary` branch removes `.agents/`, because it doesn't (checked with `git ls-tree`); one missing blank line before the first 2026-11-05 heading was added (whitespace only, no entry was edited).
+- **`seed_dev_data.py` waits for Hailey** _(Shokhina)_: it is her file, so she deletes it; the 2026-10-23 "two dev-data scripts stay" decision is reversed by the entry she adds then.
