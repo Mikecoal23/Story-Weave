@@ -8,22 +8,28 @@ Team: Michael (speech scoring), Shokhina (difficulty engine and story generation
 
 One reading session, step by step, and where each step lives in the code:
 
-1. **Pick a reader.** A caregiver's children are listed from the database.
+1. **Log in.** A caregiver logs in with their email (no password yet) or creates an account.
+   `POST /caregivers/session`, `POST /caregivers` in `backend/app/api/routes/caregivers.py`
+2. **Pick a reader.** The caregiver's children are listed from the database.
    `GET /caregivers/{id}/children` in `backend/app/api/routes/caregivers.py`
-2. **Choose what to practise.** The difficulty engine looks at the child's mastery so far and picks the patterns for the next story: the ones they've mastered, plus the next two to learn.
+3. **Choose what to practise.** The difficulty engine reads the child's mastery so far and picks up to 4 patterns for the next story: the 2 shakiest patterns they have mastered, to reinforce, plus the next 2 they haven't mastered yet, to stretch. A pattern counts as mastered after at least 5 tries with a confidence of at least 0.8, where confidence `(correct + 1) / (attempts + 2)` counts a short lucky run for less.
    `backend/app/services/difficulty.py`
-3. **Write the story.** Claude (Haiku 4.5) writes a short story using those patterns. Every word is checked against our approved vocabulary of 316 words. If a word isn't allowed, the model gets up to 3 tries, told each time which words were rejected. If all three fail, the child gets a pre-written story instead, so they never see an error.
+4. **Write the story.** Claude (Haiku 4.5) writes a short story using those patterns. Every word, including the title, is checked against our approved vocabulary (the `vocabulary_word` table). If a word isn't allowed, the model gets up to 3 tries in all, each time shown its draft and asked to change only the rejected words. If all three fail, the child gets a pre-written story instead, so they never see an error.
    `POST /stories/generate` → `backend/app/services/story_pipeline.py`, `story_generation.py`, `vocabulary_validator.py`, `story_templates.py`
-4. **Read a line aloud.** The browser records the line and uploads it. Azure Speech scores each word as `mastered`, `shaky` or `missed`.
+5. **Read a line aloud.** The browser records the line and uploads it. Azure Speech scores each word as `mastered`, `shaky` or `missed`.
    `POST /sessions/{id}/lines/{n}/audio` → `backend/app/services/scoring.py`
-5. **Update what the child knows.** Each scored word updates the child's mastery of its phonics pattern, which feeds step 2 for the next story.
+6. **Update what the child knows.** Each scored word updates the child's mastery of its phonics pattern, which feeds step 3 for the next story.
    `process_line_score` in `backend/app/services/scoring.py`
+7. **Show the caregiver.** The parent dashboard shows sessions this week, the last story, the patterns being practised, the strongest pattern and words to try at home.
+   `GET /children/{id}/dashboard` → `backend/app/services/dashboard.py`
 
 ## What works today
 
-- **Working:** the whole loop above, in the browser, against a real database, Azure Speech and Claude. After a child reads a line, each word turns mint (read well) or coral (try again).
-- **Still sample data:** the parent dashboard. Login (`admin` / `123`) and the PINs (`1234`) are placeholders until Sprint 3.
-- **Known limitation:** Claude almost always uses words outside our vocabulary, so for now nearly every child gets one of the pre-written stories. Fixing that is the first generation task in Sprint 3.
+- **Working:** the whole loop above, in the browser, against a real database, Azure Speech and Claude. After a child reads a line, each word turns mint (read well) or coral (try again). The parent dashboard shows real data. With the current vocabulary, Claude's stories almost always pass the word check, so the pre-written stories are rarely needed.
+- **Placeholders:** login is an email lookup with no password, the login token isn't checked by any other route, and both PINs are `1234`. Real PINs are planned for Sprint 4.
+- **Not tried yet:** a child's voice. Scoring has only been tested with adult and computer-generated voices.
+
+See `planning.md` §2 for the full, dated list.
 
 ## What's in the repo
 
@@ -81,9 +87,9 @@ uv run python -m scripts.seed_vocabulary
 uv run python -m scripts.dev_fixtures
 ```
 
-- `seed_vocabulary` loads the 9 phonics patterns and 316 approved words. It's safe to run again.
+- `seed_vocabulary` loads the 9 phonics patterns and the approved words from `scripts/seed_data.py`, and prints how many it added and removed. It's safe to run again: a second run changes nothing.
 - `dev_fixtures` adds one caregiver, two children (Mia and Leo) and one story, always with the same ids, so the frontend and the demo commands below work on every machine.
-- Both scripts refuse to touch a database that isn't on your machine unless you add `--allow-remote`, and `--dry-run` shows what would change without saving it.
+- Both scripts refuse to touch a database that isn't on your machine unless you add `--allow-remote`, and `--dry-run` shows what would change without saving it. Keep daily seeding local; shared Neon seeding follows the approval and dry-run rules below.
 
 The fixed ids:
 
@@ -111,9 +117,7 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173` and log in with `admin` / `123`. Choose **Child → Mia**, enter PIN `1234` and press Start. The story takes a few seconds while Claude is asked. Click the mic, read the line, then click again to stop; the words change colour once the line is scored. Which parts use real data and which use sample data is set by `USE_MOCKS` in `frontend/src/api/config.ts`.
-
-
+Open `http://localhost:5173` and log in with the fixture caregiver's email, `fixtures.caregiver@example.com` (or click **New here? Create an account** to make your own). Choose **Child → Mia**, enter PIN `1234` and press Start. The story takes a few seconds while Claude is asked. Click the mic, read the line, then click again to stop; the words change colour once the line is scored. For the parent side, choose **Parent** and enter PIN `1234`. The login screen shows whether it can reach the backend. `USE_MOCKS` in `frontend/src/api/config.ts` can switch any part back to sample data; everything uses the real backend by default.
 
 ## Checks
 
@@ -124,7 +128,7 @@ uv run pytest
 uv run ruff check .
 ```
 
-The database tests need the Docker database running. Without it they are skipped, and each skip says what wasn't tested. No test calls the real Azure or Claude APIs.
+The database tests need the Docker database running. Without it they are skipped, and each skip says what wasn't tested. They must never run against Neon. No test calls the real Azure or Claude APIs.
 
 From `frontend/`:
 
@@ -135,7 +139,11 @@ npm run build
 
 ## Shared database (Neon)
 
-The team also shares a hosted Postgres on Neon, which has the same vocabulary and demo data. Its connection strings live only in ignored `.env` files. The app uses the pooled URL (`DATABASE_URL`) and migrations use the direct one (`DATABASE_URL_UNPOOLED`); `backend/.env.example` shows the format. Tests never run against Neon. Check with the team before running scripts or migrations against it.
+The team shares a hosted Postgres on Neon, which is the integration/demo database, not the daily development or test target. Its seed data may lag the current local seed until an approved re-seed. Use local Docker for normal work. For a PR that changes migrations or seeded data, test on a temporary Neon branch created from `dev`; discard it after the PR. Keep live connection strings only in ignored `.env` files. The app uses the pooled URL (`DATABASE_URL`) and migrations use the direct one (`DATABASE_URL_UNPOOLED`); `backend/.env.example` shows the format.
+
+Any teammate may apply a merged migration or re-run a seed on shared Neon `dev` only after explicit approval from all three teammates for that operation. Verify the target is `dev`, check the current migration and that there is exactly one Alembic head, and serialize upgrades. If two migration PRs started from the same head, merge one first and rebase/regenerate the other against the updated head; stop and resolve multiple heads before upgrading. For a shared re-seed, run `--dry-run` first and review its report. If shared data is damaged, pause writes and take a snapshot; after the same approval, re-run the seed/fixture scripts or restore/rebuild from a known-good snapshot if the scripts cannot repair it. Never apply migrations or seed scripts to `production`; never drop tables or hand-edit shared rows. Shokhina maintains the canonical seed, and Michael reviews schema/scoring impact.
+
+The database-backed validator tests run only on local Docker, where they seed a rolled-back throwaway schema. Neon branch smoke tests are not a substitute for the test suite. For migration or seed validation on a Neon branch, point the ignored Neon env file at that branch and explicitly opt in to remote access; do not repoint the ordinary local `.env`.
 
 ## Data handling
 

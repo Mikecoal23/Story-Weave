@@ -1,3 +1,6 @@
+import hashlib
+import secrets
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -5,24 +8,60 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.models import Caregiver, Child
+from app.models import Caregiver, CaregiverSession, Child
+from app.schemas.caregivers import CaregiverSessionResponse, CreateCaregiverRequest, LoginRequest
 from app.schemas.children import ChildResponse
 
 router = APIRouter()
 
-# The two 501 stubs below are caregiver creation and login, scheduled for Sprint 3 with the
-# login model (planning.md, Open Question 12). Until then the dev fixtures script supplies
-# a caregiver id. Their request/response bodies are not specified yet, so none are invented.
+# Login model (planning.md, Open Question 12, 2026-11-04): email lookup with no password.
+# Stored but not checked anywhere yet (planning.md, 2026-09-30).
+SESSION_LIFETIME = timedelta(days=30)
 
 
-@router.post("/caregivers")
-def create_caregiver() -> None:
-    raise HTTPException(status_code=501, detail="Not implemented yet (Stage 2)")
+def _normalize(email: str) -> str:
+    return email.strip().lower()
 
 
-@router.post("/caregivers/{caregiver_id}/session")
-def mint_caregiver_session(caregiver_id: UUID) -> None:
-    raise HTTPException(status_code=501, detail="Not implemented yet (Stage 2)")
+def _mint_session(db: Session, caregiver: Caregiver) -> CaregiverSessionResponse:
+    # The raw token goes to the client once; the database keeps only its SHA-256 hash
+    token = secrets.token_urlsafe(32)
+    expires_at = datetime.now(UTC) + SESSION_LIFETIME
+    db.add(
+        CaregiverSession(
+            caregiver_id=caregiver.id,
+            token_hash=hashlib.sha256(token.encode()).hexdigest(),
+            expires_at=expires_at,
+        )
+    )
+    db.commit()
+    return CaregiverSessionResponse(
+        caregiver_id=caregiver.id,
+        display_name=caregiver.display_name,
+        token=token,
+        expires_at=expires_at,
+    )
+
+
+@router.post("/caregivers", response_model=CaregiverSessionResponse, status_code=201)
+def create_caregiver(
+    body: CreateCaregiverRequest, db: Session = Depends(get_db)
+) -> CaregiverSessionResponse:
+    email = _normalize(body.email)
+    if db.scalar(select(Caregiver).where(Caregiver.email == email)) is not None:
+        raise HTTPException(status_code=409, detail="Email already in use")
+    caregiver = Caregiver(display_name=body.display_name, email=email)
+    db.add(caregiver)
+    db.flush()  # assigns caregiver.id, needed by the session row
+    return _mint_session(db, caregiver)
+
+
+@router.post("/caregivers/session", response_model=CaregiverSessionResponse)
+def login(body: LoginRequest, db: Session = Depends(get_db)) -> CaregiverSessionResponse:
+    caregiver = db.scalar(select(Caregiver).where(Caregiver.email == _normalize(body.email)))
+    if caregiver is None:
+        raise HTTPException(status_code=404, detail="No caregiver with that email")
+    return _mint_session(db, caregiver)
 
 
 @router.get("/caregivers/{caregiver_id}/children", response_model=list[ChildResponse])

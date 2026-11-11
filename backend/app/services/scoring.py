@@ -13,6 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.core.words import normalize_word
 from app.models import (
     PhonicsMastery,
     ReadingAttempt,
@@ -22,7 +23,6 @@ from app.models import (
     VocabularyWordPattern,
 )
 from app.schemas.scoring import ScoreResult, WordScore
-from scripts.seed_data import normalize_word
 
 
 def _normalize_scored_word(word: str) -> str:
@@ -46,7 +46,9 @@ def score_line_audio(audio_bytes: bytes, expected_line: str) -> ScoreResult:
 
     import azure.cognitiveservices.speech as speechsdk
 
-    with tempfile.TemporaryDirectory() as temp_dir:
+    # The Azure SDK can still hold audio.wav open when this block exits, and Windows refuses
+    # to delete an open file, so a failed cleanup must not turn a good score into a 500.
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as temp_dir:
         wav_path = Path(temp_dir) / "audio.wav"
         wav_path.write_bytes(wav_bytes)
         audio_config = speechsdk.audio.AudioConfig(filename=str(wav_path))

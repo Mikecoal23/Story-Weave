@@ -115,7 +115,8 @@ def test_pattern_word_demoted_to_sight_loses_its_junction_rows(
     # Same word, now a plain non-pattern word: junction row must go.
     report = seed(session)
     assert "ship" not in tags(session)
-    assert report.junction_removed == 1
+    # ship, plus its ending forms ships/shipped/shipping, which take their base word's tags
+    assert report.junction_removed == 4
 
     monkeypatch.setattr(seed_data, "FILLER_WORDS", seed_data.FILLER_WORDS[:-1])
     monkeypatch.setattr(seed_data, "DOLCH_WORDS", (*seed_data.DOLCH_WORDS, "ship"))

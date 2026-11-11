@@ -1,4 +1,5 @@
-import { CAREGIVER_ID, USE_MOCKS } from './config'
+import { USE_MOCKS } from './config'
+import { getCaregiverId } from './caregivers'
 import { request } from './client'
 import { children } from './mockChildren'
 import type { Child } from './types'
@@ -28,7 +29,7 @@ export async function getChildren(): Promise<Child[]> {
     // A copy, so callers holding it in state see a new array after a child is added.
     return [...children]
   }
-  const list = await request<ApiChild[]>(`/caregivers/${CAREGIVER_ID}/children`)
+  const list = await request<ApiChild[]>(`/caregivers/${getCaregiverId()}/children`)
   return list.map(fromApi)
 }
 
@@ -42,7 +43,7 @@ export async function createChild(data: Pick<Child, 'name' | 'interests' | 'grad
   const created = await request<ApiChild>('/children', {
     method: 'POST',
     body: JSON.stringify({
-      caregiver_id: CAREGIVER_ID,
+      caregiver_id: getCaregiverId(),
       display_name: data.name,
       grade_level: data.gradeLevel,
       interests: data.interests,

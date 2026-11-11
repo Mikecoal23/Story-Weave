@@ -3,7 +3,7 @@ import { delay, request } from './client'
 import type { Story } from './types'
 
 const mockStory: Story = {
-  id: 'a7ecc5f3-59ce-4c69-acc9-20fd817df543',
+  id: 'f1000000-0000-4000-8000-0000000000b1',
   title: 'The Ship and the Fish',
   theme: 'the ocean',
   lines: [
@@ -23,9 +23,4 @@ export async function generateStory(childId: string): Promise<Story> {
     method: 'POST',
     body: JSON.stringify({ child_id: childId }), // backend expects snake_case
   })
-}
-
-export async function getStory(id: string): Promise<Story> {
-  if (USE_MOCKS.stories) return mockStory
-  return request<Story>(`/stories/${id}`)
 }

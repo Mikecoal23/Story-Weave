@@ -80,6 +80,13 @@ def test_a_rejected_draft_is_retried_with_the_offending_words_as_feedback() -> N
     assert "dragon" in feedback
 
 
+def test_the_retry_feedback_contains_the_rejected_draft_to_edit() -> None:
+    _, mock = run([BAD, GOOD])
+    feedback = mock.call_args_list[1].args[3]
+    assert "A dragon sat by a ship." in feedback
+    assert "Keep the story" in feedback
+
+
 def test_three_rejections_fall_back_to_a_template() -> None:
     story, mock = run([BAD, BAD, BAD])
     assert story.source == "fallback"
