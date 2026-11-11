@@ -301,10 +301,15 @@ The sprint opened with a capacity warning: it held Sprint 2's displaced work, it
 
 - [ ] PIN screens call the verify routes instead of comparing locally, and show the throttled response (after the PIN routes).
 - [ ] Support the usability sessions, and make the dashboard revisions they call for.
-- [ ] Optional, her call: the dashboard's `strongest` can use `is_mastered()` from `difficulty.py`, so it follows the same mastery rule as the engine (see 2026-11-05). **2026-11-09 review: recommended, not optional.** At 4 right out of 5 the same pattern shows as both "strongest" and "working on".
-- [ ] Stop the recording when the reader closes (2026-11-09 review): if a child taps ✕ while recording, the mic stays on, because `useRecorder.ts` has no cleanup on unmount.
-- [ ] Delete `backend/scripts/seed_dev_data.py`, which nothing uses now that `dev_fixtures.py` exists, with a Decisions Log entry (reverses 2026-10-23 "two dev-data scripts stay").
-- [ ] Small cleanup (2026-11-09 review): the unused `frontend/src/assets/*`, the "Hear it" button that only logs, stale comments in `api/client.ts` and `api/types.ts`, whether to keep the mock code now that every `USE_MOCKS` flag is false, and a 409 instead of a 500 when two sign-ups race on one email.
+- [x] Optional, her call: the dashboard's `strongest` can use `is_mastered()` from `difficulty.py`, so it follows the same mastery rule as the engine (see 2026-11-05). **2026-11-09 review: recommended, not optional.** At 4 right out of 5 the same pattern shows as both "strongest" and "working on". _(2026-11-11; see that entry.)_
+- [x] Stop the recording when the reader closes (2026-11-09 review): if a child taps ✕ while recording, the mic stays on, because `useRecorder.ts` has no cleanup on unmount. _(2026-11-11)_
+- [x] Delete `backend/scripts/seed_dev_data.py`, which nothing uses now that `dev_fixtures.py` exists, with a Decisions Log entry (reverses 2026-10-23 "two dev-data scripts stay"). _(2026-11-11)_
+- [ ] Small cleanup (2026-11-09 review):
+  - [x] The unused `frontend/src/assets/*` (2026-11-11).
+  - [x] Stale comments in `api/client.ts` and `api/types.ts` (2026-11-11).
+  - [x] A 409 instead of a 500 when two sign-ups race on one email (2026-11-11).
+  - [ ] The "Hear it" button that only logs. Planned in `frontend/hear-it-plan.md`; waits on Hailey's choice of when the child may use it.
+  - [ ] Whether to keep the mock code now that every `USE_MOCKS` flag is false.
 
 #### All three — week 1
 
@@ -655,3 +660,11 @@ We reviewed the whole codebase before closing Sprint 2. Fixes went in as small P
 - **The cleanup goes in small chunks, each its own commit and PR into `dev`, then the `dev` → `main` merge-commit PR** _(Shokhina)_. Order: docs accuracy; moving the two root word-list docs into `docs/` (with `git mv`, so their history is kept); generation hardening; seam tests; small tidy-ups.
 - **Chunk 1, docs accuracy.** The README was out of date: it still said 316 and 562 words, the old engine rule, a sample-data dashboard, login `admin` / `123` and "nearly every story is a fallback". It now describes login by email, the real engine rule, the dashboard and today's placeholders, without word counts that go stale. Its commands were run on a local backend against local Docker: `/health`, login with `fixtures.caregiver@example.com`, the fixture children, Mia's dashboard and the fixture story. In this file: Open Question 16 moves to Resolved (decided 2026-10-22, nothing changes); the frontend-testing row points at Sprint 4; Michael's `hello.ts` item no longer claims the `dictionary` branch removes `.agents/`, because it doesn't (checked with `git ls-tree`); one missing blank line before the first 2026-11-05 heading was added (whitespace only, no entry was edited).
 - **`seed_dev_data.py` waits for Hailey** _(Shokhina)_: it is her file, so she deletes it; the 2026-10-23 "two dev-data scripts stay" decision is reversed by the entry she adds then.
+
+### 2026-11-11 — Hailey's week-1 cleanup from the 2026-11-09 review
+
+- **One dev-data script now: `seed_dev_data.py` is deleted** _(Hailey)_. Reverses the 2026-10-23 "two dev-data scripts stay". Nothing used it once the frontend switched to the fixed ids, and `dev_fixtures.py` gives every machine and Neon `dev` the same rows. The `dev_fixtures.py` docstring no longer mentions it.
+- **The dashboard's `strongest` follows the engine's mastery rule.** `services/dashboard.py` now uses `is_mastered(correct, attempts)` and ranks by `confidence()`, instead of its own check on the stored `mastery_score`. At 4 right out of 5 a pattern is no longer both "strongest" and "working on". A test for that case was added to `test_dashboard.py`; it needs local Postgres and has not been run yet. `MASTERY_THRESHOLD` and `MIN_ATTEMPTS` are no longer imported by the dashboard, so the comment in `difficulty.py` saying so was removed.
+- **Sign-up race returns 409.** `POST /caregivers` already returned 409 for a taken email, but two sign-ups at the same moment both passed that check and the second hit the unique constraint as a 500. The route now catches the `IntegrityError`, rolls back and returns the same 409. A mock test covers it (runs without a database).
+- **The reader turns the mic off when it closes.** `useRecorder.ts` stops the recorder and the mic tracks on unmount, without uploading the half-read line.
+- **Small frontend tidy-ups:** the unused `src/assets/` files removed (the build output is unchanged), and stale comments in `api/client.ts` and `api/types.ts` fixed. Still open: "Hear it" (planned in `frontend/hear-it-plan.md`) and the mock code.
