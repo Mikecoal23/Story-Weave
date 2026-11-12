@@ -11,6 +11,7 @@ FALLBACK_TEMPLATES: tuple[FallbackStoryTemplate, ...] = (
         title="Ship Wish",
         theme="a frog and a ship",
         pattern_codes=("digraph_sh", "blend_fr"),
+        character="frog",
         lines=(
             "A frog sat by a ship.",
             "The frog had a wish.",

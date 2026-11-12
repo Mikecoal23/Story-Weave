@@ -14,6 +14,7 @@ export type Story = {
   id: string
   title: string
   theme: string | null // nullable in the backend's story.theme
+  character: string | null // one name from the agreed character list, or null
   lines: string[]
 }
 

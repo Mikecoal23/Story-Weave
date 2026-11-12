@@ -22,7 +22,7 @@ _BAD_REPLY_ERRORS = (ValueError, KeyError, IndexError, TypeError)
 
 _BAD_REPLY_FEEDBACK = (
     "Your reply could not be parsed. Respond with ONLY the JSON object "
-    '{"title": "...", "theme": "...", "lines": ["...", ...]} and nothing else.'
+    '{"title": "...", "theme": "...", "character": "...", "lines": ["...", ...]} and nothing else.'
 )
 
 
@@ -40,7 +40,14 @@ def _unknown_words_feedback(draft: DraftStory, unknown_words: tuple[str, ...]) -
     Measured 2026-10-30: when asked to rewrite the whole story, each retry fixed the named
     words but brought in new unknown ones, so the draft is sent back to be edited instead.
     """
-    previous = json.dumps({"title": draft.title, "theme": draft.theme, "lines": list(draft.lines)})
+    previous = json.dumps(
+        {
+            "title": draft.title,
+            "theme": draft.theme,
+            "character": draft.character,
+            "lines": list(draft.lines),
+        }
+    )
     return (
         f"It used words that are not in the allowed vocabulary: {', '.join(unknown_words)}. "
         f"Here is that story: {previous} "

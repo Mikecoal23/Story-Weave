@@ -11,6 +11,12 @@ import type { Child, Story, WordScore } from '../api/types'
 
 type Screen = 'pick' | 'loading' | 'reader' | 'finished'
 
+// Character name from the backend → emoji. Anything missing or unknown uses the default.
+const characterEmoji: Record<string, string> = {
+  fish: '🐟', frog: '🐸', dragon: '🐉', rocket: '🚀', dinosaur: '🦕', cat: '🐱', dog: '🐶',
+  unicorn: '🦄', robot: '🤖', bear: '🐻', bird: '🐦', bug: '🐞', default: '⭐',
+}
+
 type Props = {
   child: Child
   onSwitchReader: () => void
@@ -67,6 +73,10 @@ function ChildApp({ child, onSwitchReader }: Props) {
         current={lineIndex + 1}
         total={story?.lines.length ?? 1}
       />
+      {/* aria-hidden: decoration only, so screen readers skip it */}
+      <span className="reader-character" aria-hidden="true">
+        {characterEmoji[story?.character ?? ''] ?? characterEmoji.default}
+      </span>
       <SentenceReader line={story?.lines[lineIndex] ?? ''} scores={scores} />
       {sessionError && <p>We couldn't start your reading session. Try again.</p>}
       <Controls

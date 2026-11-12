@@ -57,4 +57,5 @@ def generate_story(
         lines=list(validated.lines),
         source=validated.source,
         attempts=validated.attempts,
+        character=validated.character,
     )

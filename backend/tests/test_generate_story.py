@@ -173,6 +173,7 @@ def test_generate_saves_an_llm_story_and_get_returns_it(db: Session, monkeypatch
     assert body["lines"] == ["The big dog ran.", "It is fun."]
     assert body["source"] == "llm"
     assert body["attempts"] == 2
+    assert body["character"] == "default"  # the draft set none
 
     # The generator got the child's two stretch patterns (in order), the interests and the
     # vocabulary that was loaded once for this request.

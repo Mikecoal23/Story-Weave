@@ -6,6 +6,7 @@ const mockStory: Story = {
   id: 'f1000000-0000-4000-8000-0000000000b1',
   title: 'The Ship and the Fish',
   theme: 'the ocean',
+  character: 'fish',
   lines: [
     'A ship sat on the bay.',
     'A fish swam by the ship.',
