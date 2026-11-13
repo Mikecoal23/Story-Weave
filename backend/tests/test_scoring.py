@@ -93,6 +93,7 @@ def test_process_line_score_persists_words_and_updates_non_sight_patterns() -> N
     )
     session = Mock(spec=Session)
     session.execute.return_value.all.return_value = [(ship, 10), (ship, 20), (the, 30)]
+    session.scalars.return_value.all.return_value = []  # no earlier read of this line
     added: list[object] = []
     session.add.side_effect = added.append
 

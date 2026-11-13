@@ -24,8 +24,7 @@ from app.models import Caregiver, Child, PhonicsPattern, Story
 from app.schemas.stories import ValidatedStory
 from app.services.story_store import save_validated_story
 from app.services.story_templates import FALLBACK_TEMPLATES
-
-LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
+from scripts.seed_vocabulary import LOCAL_HOSTS
 
 CAREGIVER_ID = UUID("f1000000-0000-4000-8000-000000000001")
 CAREGIVER_EMAIL = "fixtures.caregiver@example.com"
