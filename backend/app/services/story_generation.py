@@ -15,7 +15,7 @@ _REQUEST_TIMEOUT_SECONDS = 15.0
 # Must match the names in the frontend's characterEmoji map (child-ui/ChildApp.tsx).
 CHARACTERS = (
     "fish", "frog", "dragon", "rocket", "dinosaur", "cat", "dog",
-    "unicorn", "robot", "bear", "bird", "bug", "default",
+    "unicorn", "robot", "bear", "bird", "bug", "ship", "default",
 )
 
 
