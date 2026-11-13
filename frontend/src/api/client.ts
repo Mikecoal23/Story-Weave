@@ -10,5 +10,7 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
     headers: { ...headers, ...init?.headers },
   })
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+  // 204 No Content (e.g. a delete) has no body, so there is no JSON to read
+  if (res.status === 204) return undefined as T
   return res.json() as Promise<T>
 }

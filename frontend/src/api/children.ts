@@ -40,3 +40,8 @@ export async function createChild(data: Pick<Child, 'name' | 'interests' | 'grad
   })
   return fromApi(created)
 }
+
+// Also deletes the child's stories, sessions and progress (the backend cascades)
+export async function deleteChild(id: string): Promise<void> {
+  await request<void>(`/children/${id}`, { method: 'DELETE' })
+}

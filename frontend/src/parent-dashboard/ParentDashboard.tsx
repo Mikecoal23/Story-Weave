@@ -11,11 +11,11 @@ import type { Child, Dashboard } from '../api/types'
 
 type Props = {
   childList: Child[]
-  onChildAdded: () => void // reloads the list in App after a child is created
+  onChildrenChanged: () => void // reloads the list in App after a child is added or removed
   onLogout: () => void
 }
 
-function ParentDashboard({ childList, onChildAdded, onLogout }: Props) {
+function ParentDashboard({ childList, onChildrenChanged, onLogout }: Props) {
   const [tab, setTab] = useState<Tab>('Home')
   // Defaults to the first child; the dropdown on Home switches it
   // Undefined when the caregiver has no children yet
@@ -26,8 +26,14 @@ function ParentDashboard({ childList, onChildAdded, onLogout }: Props) {
   const [result, setResult] = useState<{ id: string; attempt: number; data: Dashboard | null } | null>(null)
 
   function handleAdded(newChild: Child) {
-    onChildAdded()
+    onChildrenChanged()
     setChild(newChild)
+  }
+
+  // Select another child, or none (Home then shows "No readers yet")
+  function handleRemoved(removed: Child) {
+    onChildrenChanged()
+    setChild(childList.find((c) => c.id !== removed.id))
   }
 
   // Reload the stats whenever a different child is selected
@@ -63,6 +69,7 @@ function ParentDashboard({ childList, onChildAdded, onLogout }: Props) {
             childList={childList}
             onChange={setChild}
             onAdded={handleAdded}
+            onRemoved={handleRemoved}
             dashboard={dashboard}
             failed={failed}
             onRetry={() => setAttempt(attempt + 1)}

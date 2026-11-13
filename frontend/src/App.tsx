@@ -49,7 +49,7 @@ function App() {
   if (screen === 'login') return <LoginScreen onSuccess={handleLogin} loadError={loadError} />
   if (screen === 'parentPin')
     return <PinScreen title="Enter parent PIN" expectedPin={PARENT_PIN} onSuccess={() => setScreen('parent')} />
-  if (screen === 'parent') return <ParentDashboard childList={childList} onChildAdded={loadChildren} onLogout={handleLogout} />
+  if (screen === 'parent') return <ParentDashboard childList={childList} onChildrenChanged={loadChildren} onLogout={handleLogout} />
   if (screen === 'childPicker')
     return (
       <ChildPicker
