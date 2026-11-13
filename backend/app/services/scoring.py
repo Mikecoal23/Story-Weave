@@ -167,6 +167,56 @@ def _parse_azure_assessment(result_json: str, expected_line: str) -> ScoreResult
     return ScoreResult(words=words)
 
 
+def _take_back_earlier_reads(
+    session: Session, reading_session: ReadingSession, story_line_id: UUID
+) -> None:
+    """Latest read replaces: undo the mastery counts of this line's earlier reads in this
+    reading session and delete those attempts, so a re-recorded line is counted once.
+
+    Mirrors the forward path in `process_line_score`: a word counted toward each of its
+    patterns unless it had no vocabulary row or was a sight word, and a `mastered` word was
+    also a correct one. The `max`/`min` calls only guard the table's CHECK constraints
+    against a vocabulary link added after the first read.
+    """
+    earlier = session.scalars(
+        select(ReadingAttempt).where(
+            ReadingAttempt.reading_session_id == reading_session.id,
+            ReadingAttempt.story_line_id == story_line_id,
+        )
+    ).all()
+    if not earlier:
+        return
+
+    word_ids = {a.vocabulary_word_id for a in earlier if a.vocabulary_word_id is not None}
+    pattern_ids_by_word: dict[int, set[int]] = {}
+    for word_id, pattern_id in session.execute(
+        select(VocabularyWordPattern.vocabulary_word_id, VocabularyWordPattern.phonics_pattern_id)
+        .join(
+            VocabularyWord,
+            VocabularyWord.vocabulary_word_id == VocabularyWordPattern.vocabulary_word_id,
+        )
+        .where(
+            VocabularyWordPattern.vocabulary_word_id.in_(word_ids),
+            VocabularyWord.is_sight_word.is_(False),
+        )
+    ):
+        pattern_ids_by_word.setdefault(word_id, set()).add(pattern_id)
+
+    for attempt in earlier:
+        for pattern_id in pattern_ids_by_word.get(attempt.vocabulary_word_id, ()):
+            mastery = session.get(PhonicsMastery, (reading_session.child_id, pattern_id))
+            if mastery is None:
+                continue
+            mastery.attempts_count = max(0, mastery.attempts_count - 1)
+            if attempt.result_status == "mastered":
+                mastery.correct_count = max(0, mastery.correct_count - 1)
+            mastery.correct_count = min(mastery.correct_count, mastery.attempts_count)
+            mastery.mastery_score = (
+                mastery.correct_count / mastery.attempts_count if mastery.attempts_count else 0
+            )
+        session.delete(attempt)
+
+
 def process_line_score(
     session: Session,
     reading_session_id: UUID,
@@ -181,6 +231,8 @@ def process_line_score(
     story_line = session.get(StoryLine, story_line_id)
     if story_line is None or story_line.story_id != reading_session.story_id:
         raise ValueError("Story line does not belong to the reading session")
+
+    _take_back_earlier_reads(session, reading_session, story_line_id)
 
     word_keys = {normalize_scored_word(word.expected_word) for word in score_result.words}
     vocabulary_rows = session.execute(
