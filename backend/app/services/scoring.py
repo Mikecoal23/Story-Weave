@@ -5,7 +5,6 @@ import tempfile
 import wave
 from io import BytesIO
 from pathlib import Path
-from string import punctuation
 from typing import Any
 from uuid import UUID
 
@@ -13,7 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.core.words import normalize_word
+from app.core.words import normalize_scored_word
 from app.models import (
     PhonicsMastery,
     ReadingAttempt,
@@ -23,10 +22,6 @@ from app.models import (
     VocabularyWordPattern,
 )
 from app.schemas.scoring import ScoreResult, WordScore
-
-
-def _normalize_scored_word(word: str) -> str:
-    return normalize_word(word).strip(punctuation.replace("'", ""))
 
 
 def score_line_audio(audio_bytes: bytes, expected_line: str) -> ScoreResult:
@@ -187,9 +182,7 @@ def process_line_score(
     if story_line is None or story_line.story_id != reading_session.story_id:
         raise ValueError("Story line does not belong to the reading session")
 
-    word_keys = {
-        _normalize_scored_word(word.expected_word) for word in score_result.words
-    }
+    word_keys = {normalize_scored_word(word.expected_word) for word in score_result.words}
     vocabulary_rows = session.execute(
         select(VocabularyWord, VocabularyWordPattern.phonics_pattern_id)
         .outerjoin(
@@ -212,7 +205,7 @@ def process_line_score(
     mastery_by_pattern: dict[int, PhonicsMastery] = {}
 
     for word_index, word_score in enumerate(score_result.words, start=1):
-        word_key = _normalize_scored_word(word_score.expected_word)
+        word_key = normalize_scored_word(word_score.expected_word)
         vocabulary_entry = vocabulary_by_word.get(word_key)
         vocabulary_word = vocabulary_entry[0] if vocabulary_entry else None
         pattern_ids = vocabulary_entry[1] if vocabulary_entry else set()

@@ -12,8 +12,10 @@ from app.services.story_pipeline import (
     MAX_THEME_LENGTH,
     MAX_TITLE_LENGTH,
     NoValidStoryError,
+    clean_whitespace,
     generate_validated_story,
     rank_fallback_templates,
+    unscorable_word,
 )
 from app.services.story_templates import FALLBACK_TEMPLATES
 from app.services.vocabulary_validator import tokenize
@@ -193,3 +195,69 @@ def test_fallback_skips_a_template_that_fails_validation() -> None:
 def test_raises_when_neither_the_llm_nor_any_template_validates() -> None:
     with pytest.raises(NoValidStoryError):
         run([BAD] * 3, allowed=frozenset({"a"}))
+
+
+# --- whitespace and words the scorer could not match ----------------------------------------
+
+
+def test_extra_whitespace_in_lines_is_cleaned_before_the_story_is_returned() -> None:
+    messy = GOOD.model_copy(
+        update={"lines": ("A  frog sat   by a ship. ", "\tThe frog\nhad a wish.")}
+    )
+    story, _ = run([messy])
+    assert (story.source, story.attempts) == ("llm", 1)
+    assert story.lines == ("A frog sat by a ship.", "The frog had a wish.")
+
+
+def test_title_and_theme_are_cleaned_too() -> None:
+    messy = GOOD.model_copy(update={"title": " Ship  Wish ", "theme": "a  frog "})
+    story, _ = run([messy])
+    assert (story.title, story.theme) == ("Ship Wish", "a frog")
+
+
+def test_the_retry_feedback_shows_the_cleaned_draft() -> None:
+    messy_bad = BAD.model_copy(
+        update={"lines": ("A  dragon sat by a ship. ", "The dragon had a wish.")}
+    )
+    _, mock = run([messy_bad, GOOD])
+    feedback = mock.call_args_list[1].args[3]
+    assert "A dragon sat by a ship." in feedback
+    assert "A  dragon" not in feedback
+
+
+@pytest.mark.parametrize(
+    ("line", "word"),
+    [
+        ("“A frog sat,” said the frog.", "“A"),  # curly double quotes
+        ("The frog ran—fast.", "ran—fast."),  # em dash joins two words
+        ("The frog sat — and had a wish.", "—"),  # a lone dash
+        ("The frog-ship had a wish.", "frog-ship"),  # hyphen joins two words
+        ("The frog & the ship.", "&"),  # a lone symbol
+    ],
+)
+def test_a_line_the_scorer_could_not_match_is_rejected_with_feedback(line: str, word: str) -> None:
+    broken = GOOD.model_copy(update={"lines": (line, "The frog had a wish.")})
+    story, mock = run([broken, GOOD])
+    assert (story.source, story.attempts) == ("llm", 2)
+    feedback = mock.call_args_list[1].args[3]
+    assert feedback.startswith("Your story could not be used.")
+    assert f"'{word}' is not one plain word" in feedback
+
+
+def test_straight_quotes_commas_and_apostrophes_are_fine() -> None:
+    line = '"A frog\'s ship," said the frog.'
+    ok = GOOD.model_copy(update={"lines": (line,)})
+    story, _ = run([ok], allowed=ALLOWED | {"frog's"})
+    assert story.attempts == 1
+    assert story.lines == (line,)
+
+
+def test_unscorable_word_names_the_first_bad_word_or_returns_none() -> None:
+    assert unscorable_word("A frog sat by a ship.") is None
+    assert unscorable_word('"I wish to go," said the frog.') is None
+    assert unscorable_word("A frog ran—fast and sat—down.") == "ran—fast"
+    assert unscorable_word("") is None
+
+
+def test_clean_whitespace_collapses_every_kind_of_space() -> None:
+    assert clean_whitespace("  A \t frog\n sat here.  ") == "A frog sat here."
