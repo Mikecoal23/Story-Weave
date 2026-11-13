@@ -11,7 +11,7 @@ import type { Child, Story, WordScore } from '../api/types'
 
 type Screen = 'pick' | 'loading' | 'reader' | 'finished'
 
-// Character name from the backend → emoji. Anything missing or unknown uses the default.
+// Character name from the backend -> emoji. Anything missing or unknown uses the default.
 const characterEmoji: Record<string, string> = {
   fish: '🐟', frog: '🐸', dragon: '🐉', rocket: '🚀', dinosaur: '🦕', cat: '🐱', dog: '🐶',
   unicorn: '🦄', robot: '🤖', bear: '🐻', bird: '🐦', bug: '🐞', ship: '⛵', default: '⭐',

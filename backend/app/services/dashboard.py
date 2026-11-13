@@ -1,11 +1,10 @@
 from datetime import UTC, datetime, timedelta
-from string import punctuation
 from uuid import UUID
 
 from sqlalchemy import exists, func, select
 from sqlalchemy.orm import Session
 
-from app.core.words import normalize_word
+from app.core.words import normalize_scored_word
 from app.models import (
     PhonicsMastery,
     PhonicsPattern,
@@ -108,7 +107,7 @@ def _practice_words(db: Session, child_id: UUID) -> list[str]:
     words: list[str] = []
     for expected in expected_words:
         # Expected words keep the line's punctuation ("ship."), so strip it, but keep apostrophes.
-        word = normalize_word(expected).strip(punctuation.replace("'", ""))
+        word = normalize_scored_word(expected)
         if word and word not in words:
             words.append(word)
         if len(words) == MAX_PRACTICE_WORDS:

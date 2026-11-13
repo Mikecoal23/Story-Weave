@@ -4,7 +4,7 @@ from collections.abc import Sequence
 import anthropic
 
 from app.core.config import settings
-from app.models.entities import PhonicsPattern
+from app.models import PhonicsPattern
 from app.schemas.stories import DraftStory
 
 # A live call takes about 2 s (measured 2026-10-23). The SDK default is a 600 s read timeout
@@ -106,12 +106,21 @@ def generate_story_draft(
             }
         ],
     )
-    raw_text = message.content[0].text
+    # Every "this reply is not a story" case raises ValueError, which the pipeline counts as
+    # a bad reply (one used attempt). A non-text first block has no `.text`.
+    raw_text = getattr(message.content[0], "text", None) if message.content else None
+    if not isinstance(raw_text, str):
+        raise ValueError("The reply has no text block")
     data = json.loads(_extract_json_object(raw_text))
     # A missing or unknown character isn't worth a retry; just show the default.
     character = data.get("character")
     if character not in CHARACTERS:
         character = "default"
+    if not isinstance(data, dict):
+        raise ValueError("The reply is not a JSON object")
+    lines = data["lines"]
+    if not isinstance(lines, list) or not all(isinstance(line, str) for line in lines):
+        raise ValueError("The reply's lines are not a list of strings")
     return DraftStory(
         title=data["title"],
         theme=data["theme"],
