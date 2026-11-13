@@ -3,6 +3,7 @@ import shutil
 import subprocess
 import tempfile
 import wave
+from datetime import UTC, datetime
 from io import BytesIO
 from pathlib import Path
 from typing import Any
@@ -233,6 +234,7 @@ def process_line_score(
         raise ValueError("Story line does not belong to the reading session")
 
     _take_back_earlier_reads(session, reading_session, story_line_id)
+    now = datetime.now(UTC)  # one time for the whole line, stored as last_practised_at
 
     word_keys = {normalize_scored_word(word.expected_word) for word in score_result.words}
     vocabulary_rows = session.execute(
@@ -295,6 +297,7 @@ def process_line_score(
                 session.add(mastery)
             mastery_by_pattern[pattern_id] = mastery
 
+            mastery.last_practised_at = now
             mastery.attempts_count += 1
             if word_score.status == "mastered":
                 mastery.correct_count += 1
