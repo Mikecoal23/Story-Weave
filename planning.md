@@ -304,12 +304,12 @@ The sprint opened with a capacity warning: it held Sprint 2's displaced work, it
 - [x] Optional, her call: the dashboard's `strongest` can use `is_mastered()` from `difficulty.py`, so it follows the same mastery rule as the engine (see 2026-11-05). **2026-11-09 review: recommended, not optional.** At 4 right out of 5 the same pattern shows as both "strongest" and "working on". _(2026-11-11; see that entry.)_
 - [x] Stop the recording when the reader closes (2026-11-09 review): if a child taps ✕ while recording, the mic stays on, because `useRecorder.ts` has no cleanup on unmount. _(2026-11-11)_
 - [x] Delete `backend/scripts/seed_dev_data.py`, which nothing uses now that `dev_fixtures.py` exists, with a Decisions Log entry (reverses 2026-10-23 "two dev-data scripts stay"). _(2026-11-11)_
-- [ ] Small cleanup (2026-11-09 review):
+- [x] Small cleanup (2026-11-09 review):
   - [x] The unused `frontend/src/assets/*` (2026-11-11).
   - [x] Stale comments in `api/client.ts` and `api/types.ts` (2026-11-11).
   - [x] A 409 instead of a 500 when two sign-ups race on one email (2026-11-11).
-  - [ ] The "Hear it" button that only logs. Planned in `frontend/hear-it-plan.md`; waits on Hailey's choice of when the child may use it.
-  - [ ] Whether to keep the mock code now that every `USE_MOCKS` flag is false.
+  - [x] The "Hear it" button that only logs. Planned in `frontend/hear-it-plan.md`; waits on Hailey's choice of when the child may use it. _(2026-11-13: only after the line has been tried once.)_
+  - [x] Whether to keep the mock code now that every `USE_MOCKS` flag is false. _(2026-11-13: removed, including `api/mockChildren.ts`.)_
 
 #### All three — week 1
 
@@ -668,3 +668,8 @@ We reviewed the whole codebase before closing Sprint 2. Fixes went in as small P
 - **Sign-up race returns 409.** `POST /caregivers` already returned 409 for a taken email, but two sign-ups at the same moment both passed that check and the second hit the unique constraint as a 500. The route now catches the `IntegrityError`, rolls back and returns the same 409. A mock test covers it (runs without a database).
 - **The reader turns the mic off when it closes.** `useRecorder.ts` stops the recorder and the mic tracks on unmount, without uploading the half-read line.
 - **Small frontend tidy-ups:** the unused `src/assets/` files removed (the build output is unchanged), and stale comments in `api/client.ts` and `api/types.ts` fixed. Still open: "Hear it" (planned in `frontend/hear-it-plan.md`) and the mock code.
+
+### 2026-11-13 — "Hear it" and the mock code
+
+- **"Hear it" works only after the child has tried the line** _(Hailey)_. Hearing a line before reading it lets a child copy the sound instead of decoding the words, which would make the scores look better than the real reading. The button stays disabled until the line has been scored, and while recording or uploading, so the mic never scores the computer's voice. It uses the browser's built-in `speechSynthesis` at 0.8 speed: no new dependency and no backend. Chosen over "anytime" (dishonest scores) and hiding the button until after the usability sessions. The voice differs by browser and computer, so check it on the usability-session laptop. Tapping ✕ mid-sentence lets the sentence finish. Revisit if testers say children want to hear a line first.
+- **The frontend mock code is removed** _(Hailey)_. Every `USE_MOCKS` flag was already `false`, so the mock branches were unused. `USE_MOCKS`, `delay()`, the mock story, sessions, scores and dashboards, and `api/mockChildren.ts` are gone; every API call now goes to the backend, which must be running. The placeholder child PIN `'1234'` stays in `api/children.ts` until the PIN routes exist (Open Question 13). Build and lint pass.

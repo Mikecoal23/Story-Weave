@@ -1,10 +1,5 @@
 import { API_URL } from './config'
 
-// Waits, so mock functions can pretend to be a network call
-export function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
-
 // Small wrapper around fetch: adds the base URL, reads JSON, throws on non-2xx responses
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   // File uploads (FormData) must not get a JSON Content-Type; the browser sets its own

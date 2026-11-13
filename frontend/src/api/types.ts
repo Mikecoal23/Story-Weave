@@ -1,6 +1,6 @@
 // Shapes mirror backend/app/schemas and backend/app/models/entities.py
 
-// `pin` is not in the backend yet (PIN routes wait on Open Question 13), so it stays mock-only
+// `pin` is not in the backend yet (PIN routes wait on Open Question 13); api/children.ts fills in a placeholder
 export type Child = {
   id: string // UUID
   name: string // backend field: display_name

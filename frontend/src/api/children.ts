@@ -1,7 +1,5 @@
-import { USE_MOCKS } from './config'
 import { getCaregiverId } from './caregivers'
 import { request } from './client'
-import { children } from './mockChildren'
 import type { Child } from './types'
 
 // A child as the backend sends it (backend ChildResponse)
@@ -25,20 +23,11 @@ function fromApi(c: ApiChild): Child {
 }
 
 export async function getChildren(): Promise<Child[]> {
-  if (USE_MOCKS.children) {
-    // A copy, so callers holding it in state see a new array after a child is added.
-    return [...children]
-  }
   const list = await request<ApiChild[]>(`/caregivers/${getCaregiverId()}/children`)
   return list.map(fromApi)
 }
 
 export async function createChild(data: Pick<Child, 'name' | 'interests' | 'gradeLevel'>): Promise<Child> {
-  if (USE_MOCKS.children) {
-    const child: Child = { ...data, id: crypto.randomUUID(), pin: '1234' }
-    children.push(child)
-    return child
-  }
   // Frontend names -> backend names
   const created = await request<ApiChild>('/children', {
     method: 'POST',

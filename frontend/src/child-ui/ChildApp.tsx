@@ -82,6 +82,8 @@ function ChildApp({ child, onSwitchReader }: Props) {
       <Controls
         sessionId={sessionId}
         lineNumber={lineIndex + 1}
+        line={story?.lines[lineIndex] ?? ''}
+        tried={scores !== null}
         onScored={setScores}
         onNext={handleNext}
       />
