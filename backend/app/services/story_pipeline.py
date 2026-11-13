@@ -5,7 +5,7 @@ from collections.abc import Sequence
 import anthropic
 
 from app.core.config import settings
-from app.models.entities import PhonicsPattern
+from app.models import PhonicsPattern
 from app.schemas.stories import DraftStory, FallbackStoryTemplate, ValidatedStory
 from app.services.story_generation import LLMNotConfiguredError, generate_story_draft
 from app.services.story_templates import FALLBACK_TEMPLATES

@@ -84,7 +84,7 @@ def test_irregular_th_words_stay_sight_words() -> None:
 
 
 def test_starter_sight_words_are_sight_words() -> None:
-    # The sight words in sprint1_phonics_pattern_starter_set.md, Section 2.
+    # The sight words in docs/sprint1_phonics_pattern_starter_set.md, Section 2.
     words = by_word()
     assert all(words[w].is_sight_word for w in ("said", "they", "of", "the", "was", "to", "you"))
 

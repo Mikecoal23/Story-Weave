@@ -4,7 +4,7 @@ from collections.abc import Sequence
 import anthropic
 
 from app.core.config import settings
-from app.models.entities import PhonicsPattern
+from app.models import PhonicsPattern
 from app.schemas.stories import DraftStory
 
 # A live call takes about 2 s (measured 2026-10-23). The SDK default is a 600 s read timeout

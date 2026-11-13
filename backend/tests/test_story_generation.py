@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from app.core.config import settings
-from app.models.entities import PhonicsPattern
+from app.models import PhonicsPattern
 from app.services.story_generation import LLMNotConfiguredError, generate_story_draft
 
 

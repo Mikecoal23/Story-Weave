@@ -66,7 +66,6 @@ The whole path works in the browser on one machine: create an account or log in 
 - **The engine has no memory of time.** It can't tell a pattern practised yesterday from one practised a month ago; spaced repetition needs a `last_practised_at` column (Sprint 4 week 1).
 - **The login token isn't checked.** `POST /caregivers/session` returns a token, but no other route checks it yet.
 - **A saved story doesn't remember whether it was a fallback** (Open Question 16, decided response-only for now).
-- **`main` is behind `dev`.** It last matched on 2026-10-23 (PR #25). The end-of-Sprint 3 merge-commit PR from `dev` is still to open (Sprint 4 week 1).
 
 ---
 
@@ -280,10 +279,10 @@ The sprint opened with a capacity warning: it held Sprint 2's displaced work, it
 - [ ] Interest-matching and generation quality, including the Open Library / Merriam-Webster vocabulary expansion. Any change to generation is measured before and after (5+ runs each).
 - [ ] Cleanup from the 2026-11-09 review, before other week-1 work:
   - [x] README and planning facts brought up to date (2026-11-09).
-  - [ ] Move the two root word-list docs into `docs/`.
+  - [x] Move the two root word-list docs into `docs/` (2026-11-12).
   - [ ] Generation hardening: clean whitespace in LLM lines, count a non-text reply as a bad reply, and don't hold a database transaction open during the LLM calls.
   - [ ] Seam tests: scoring → engine, and the generate route for a child with mastered patterns.
-  - [ ] Small tidy-ups: rename `test_route_stubs.py`, share `LOCAL_HOSTS`, import from `app.models` everywhere.
+  - [x] Small tidy-ups (2026-11-12): rename `test_route_stubs.py`, share `LOCAL_HOSTS`, import from `app.models` everywhere.
 
 #### Michael — week 1 (carried from Sprint 3)
 
@@ -292,8 +291,8 @@ The sprint opened with a capacity warning: it held Sprint 2's displaced work, it
 - [ ] Phoneme-level attribution, replacing today's word-level attribution.
 - [ ] Decoding-vs-articulation classification and articulation-flag honouring.
 - [ ] The 2026-10-23 code-review items: log the cause before the audio route returns a 502; add an upload size limit; decide whether `reading_attempt.expected_word` keeps punctuation. From the 2026-11-09 review: also say "not configured" when the Azure key or FFmpeg is missing (today both show as "Azure Speech assessment failed"), and test the 422, 502 and 504 responses.
-- [ ] Open a PR for the `dictionary` branch (Merriam-Webster pronunciation help) or say it waits. It is 27 commits behind `dev` (2026-11-09), so merge `dev` into it first.
-- [ ] Keep or remove the root `hello.ts`, `.agents/skills/` and `skills-lock.json`. All three are still on `dev` **and** on the `dictionary` branch (checked 2026-11-09, despite that branch's commit message).
+- [ ] Open a PR for the `dictionary` branch (Merriam-Webster pronunciation help) or say it waits. It is 3 commits ahead of and 29 behind `dev` (2026-11-12), so merge `dev` into it first. It adds a migration, `4d8ac9f62e11`, on top of `9cde937f7a48`, which follows the shared-database rules (Open Question 15) before it reaches Neon `dev`.
+- [ ] Keep or remove the root `hello.ts`, `.agents/skills/` and `skills-lock.json`. All three are still on `dev`. The `dictionary` branch now removes all three (checked 2026-11-12 with `git ls-tree`; on 2026-11-09 it still held them), so merging it would remove them from `dev`.
 - [ ] One formatting-only commit: `ruff format` on the 11 files of yours that fail `ruff format --check` (2026-11-09 review).
 - [ ] Decide whether a `reading_session` is ever marked `completed` (with `finished_at`); today nothing sets it. _(with Hailey)_
 
@@ -312,7 +311,7 @@ The sprint opened with a capacity warning: it held Sprint 2's displaced work, it
 - [ ] Moderated usability sessions: 2–3 child testers (one with a lisp), a couple of adult testers and at least 2 caregivers, on one laptop running local Docker, placeholder names only (Open Question 8). Michael leads. Findings go in the Decisions Log. _(Sprint 3 done-item #6)_
 - [ ] Each of us runs Docker, the backend and the frontend on our own machine and sees `/health` in the browser. _(Hailey done 2026-11-01; Michael and Shokhina still to confirm.)_
 - [ ] Confirm Vitest + React Testing Library with one smoke test, or decide not to test the frontend this semester.
-- [ ] Bring `main` up from `dev` with a merge-commit PR (due at the end of Sprint 3; opened after the 2026-11-09 cleanup).
+- [x] Bring `main` up from `dev` with a merge-commit PR (due at the end of Sprint 3; opened after the 2026-11-09 cleanup) (PR #41, 2026-11-11).
 - [ ] Decide what the login token is for: today `POST /caregivers/session` mints one, the frontend discards it and no route checks it. The PIN verify routes are the natural first place to require it (2026-11-09 review).
 
 **Week 2 — Nov 13 to Nov 20: polish and final testing only. A hard feature freeze.** No new features, no absorbed carryover.
@@ -655,3 +654,14 @@ We reviewed the whole codebase before closing Sprint 2. Fixes went in as small P
 - **The cleanup goes in small chunks, each its own commit and PR into `dev`, then the `dev` → `main` merge-commit PR** _(Shokhina)_. Order: docs accuracy; moving the two root word-list docs into `docs/` (with `git mv`, so their history is kept); generation hardening; seam tests; small tidy-ups.
 - **Chunk 1, docs accuracy.** The README was out of date: it still said 316 and 562 words, the old engine rule, a sample-data dashboard, login `admin` / `123` and "nearly every story is a fallback". It now describes login by email, the real engine rule, the dashboard and today's placeholders, without word counts that go stale. Its commands were run on a local backend against local Docker: `/health`, login with `fixtures.caregiver@example.com`, the fixture children, Mia's dashboard and the fixture story. In this file: Open Question 16 moves to Resolved (decided 2026-10-22, nothing changes); the frontend-testing row points at Sprint 4; Michael's `hello.ts` item no longer claims the `dictionary` branch removes `.agents/`, because it doesn't (checked with `git ls-tree`); one missing blank line before the first 2026-11-05 heading was added (whitespace only, no entry was edited).
 - **`seed_dev_data.py` waits for Hailey** _(Shokhina)_: it is her file, so she deletes it; the 2026-10-23 "two dev-data scripts stay" decision is reversed by the entry she adds then.
+
+### 2026-11-12 — Sprint 4 hardening pass, chunk A: docs moved and small tidy-ups
+
+- **The two word-list docs moved from the repo root into `docs/`**, with `git mv` so their history is kept: `docs/sprint1_phonics_pattern_starter_set.md` and `docs/sprint3_word_list_candidates.md`. The three references in `backend/scripts/seed_data.py` and the one in `backend/tests/test_seed_data.py` now say `docs/...`. Older entries in this log keep the old root path on purpose, because an old entry is never edited; read those paths as `docs/...`.
+- **`LOCAL_HOSTS` is defined once, in `scripts/seed_vocabulary.py`**, and `scripts/dev_fixtures.py` imports it. Why there: `tests/support.py` already imported it from that file, and the fixtures already need the vocabulary seed to run first. **`scripts/seed_dev_data.py` keeps its own copy** because Hailey's unmerged branch `hailey/sprint4-week1-cleanup` deletes that file, and editing a file that is about to go would only add a merge conflict.
+- **`PhonicsPattern` is imported from `app.models`** in `story_generation.py`, `story_pipeline.py` and their two test files, like the rest of the code.
+- **`tests/test_route_stubs.py` is now `tests/test_api_contract.py`** (`git mv`). No route returns 501 any more, so "stubs" was wrong, but the file's 3 tests still check the route contract through the OpenAPI schema, so they were kept and no test changed.
+- **`main` was brought up from `dev` by merge-commit PR #41 on 2026-11-11.** Checked 2026-11-12: `origin/main` is `f5793db`, `origin/dev` is `aaebfcd`, and the two trees are identical. That closes the "Bring `main` up from `dev`" item in Sprint 4 and the "`main` is behind `dev`" line in §2.
+- **Corrected facts about Michael's `dictionary` branch** (checked 2026-11-12 with `git ls-tree`). It now removes `hello.ts`, `.agents/` and `skills-lock.json`, which the 2026-11-09 entry's check found it did not; all three are still on `dev`. It is 3 commits ahead of and 29 behind `dev`, and it adds the migration `4d8ac9f62e11` on top of `9cde937f7a48`. Both Michael items in Sprint 4 are updated and stay unticked; they are his.
+- **Numbers after chunk A:** 180 backend tests pass (unchanged), `ruff check` is clean, the 7 edited files pass `ruff format --check`, and Alembic is still at one head, `9cde937f7a48`.
+- **Still to come:** chunk B (generation hardening and the seam tests), chunk C (re-recorded lines counted twice) and chunk D (spaced repetition) follow as separate commits and get their own entries here.

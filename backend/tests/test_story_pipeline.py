@@ -5,7 +5,7 @@ import httpx
 import pytest
 
 from app.core.config import settings
-from app.models.entities import PhonicsPattern
+from app.models import PhonicsPattern
 from app.schemas.stories import DraftStory
 from app.services.story_generation import LLMNotConfiguredError
 from app.services.story_pipeline import (
