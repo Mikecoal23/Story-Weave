@@ -119,6 +119,20 @@ def test_existing_rows_are_never_modified(db: Session) -> None:
     assert db.get(Child, MIA_ID).display_name == "Renamed"  # type: ignore[union-attr]
 
 
+def test_the_fixture_story_is_stored_as_a_fallback_and_an_existing_row_keeps_its_source(
+    db: Session,
+) -> None:
+    seed_fixtures(db)
+    story = db.get(Story, STORY_ID)
+    assert story.source == "fallback"  # type: ignore[union-attr]
+    story.source = None  # type: ignore[union-attr]  # like a row from before the column existed
+    db.flush()
+
+    seed_fixtures(db)
+
+    assert db.get(Story, STORY_ID).source is None  # type: ignore[union-attr]
+
+
 def test_refuses_to_run_before_the_vocabulary_is_seeded(empty_db: Session) -> None:
     with pytest.raises(RuntimeError, match="seed_vocabulary"):
         seed_fixtures(empty_db)

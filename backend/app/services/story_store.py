@@ -14,10 +14,18 @@ def save_validated_story(
 
     Status is 'validated' for LLM and fallback stories alike. The pattern links come from
     the story's own `pattern_codes` (the targets for an LLM draft, the template's codes for
-    a fallback), so a fallback is linked to what it actually practices. `story_id` is only
-    for the dev fixtures script, which needs a fixed id; leave it out otherwise.
+    a fallback), so a fallback is linked to what it actually practices. `source` ("llm" or
+    "fallback") is stored on the story; rows saved before that column existed hold NULL.
+    `story_id` is only for the dev fixtures script, which needs a fixed id; leave it out
+    otherwise.
     """
-    row = Story(child_id=child_id, title=story.title, theme=story.theme, status="validated")
+    row = Story(
+        child_id=child_id,
+        title=story.title,
+        theme=story.theme,
+        status="validated",
+        source=story.source,
+    )
     if story_id is not None:
         row.id = story_id
     db.add(row)
