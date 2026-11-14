@@ -1,3 +1,4 @@
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 import pytest
@@ -92,3 +93,39 @@ def test_when_everything_is_mastered_stretch_is_empty() -> None:
     counts = {pattern_id: (9, 10) for pattern_id in IDS}
 
     assert pick_patterns(IDS, counts) == ((10, 20), ())
+
+
+# --- spaced repetition: reinforce prefers the patterns practised longest ago ---------------
+
+T0 = datetime(2026, 11, 1, tzinfo=UTC)
+MASTERED = {10: (20, 20), 20: (9, 10), 30: (5, 5)}  # confidence 0.955, 0.833, 0.857
+
+
+def test_reinforce_prefers_the_patterns_practised_longest_ago() -> None:
+    # By confidence alone this would be (20, 30); 20 was read yesterday, so 10 comes in.
+    last = {10: T0, 20: T0 + timedelta(days=9), 30: T0 + timedelta(days=5)}
+
+    assert pick_patterns(IDS, MASTERED, last) == ((10, 30), (40, 50))
+
+
+def test_a_never_practised_mastered_pattern_comes_before_any_practised_one() -> None:
+    last = {10: T0, 20: T0 + timedelta(days=9)}  # 30 has no time
+
+    assert pick_patterns(IDS, MASTERED, last) == ((10, 30), (40, 50))
+
+
+def test_equal_times_fall_back_to_the_lowest_confidence() -> None:
+    last = {10: T0, 20: T0, 30: T0}
+
+    assert pick_patterns(IDS, MASTERED, last) == ((20, 30), (40, 50))
+
+
+def test_without_times_the_rule_is_the_confidence_rule() -> None:
+    assert pick_patterns(IDS, MASTERED) == pick_patterns(IDS, MASTERED, {}) == ((20, 30), (40, 50))
+
+
+def test_recency_never_changes_which_patterns_are_stretched() -> None:
+    counts = {**MASTERED, 40: (1, 2)}
+    last = {10: T0, 20: T0, 30: T0, 40: T0 + timedelta(days=30)}
+
+    assert pick_patterns(IDS, counts, last)[1] == pick_patterns(IDS, counts)[1] == (40, 50)
