@@ -5,6 +5,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -52,7 +53,13 @@ def create_caregiver(
         raise HTTPException(status_code=409, detail="Email already in use")
     caregiver = Caregiver(display_name=body.display_name, email=email)
     db.add(caregiver)
-    db.flush()  # assigns caregiver.id, needed by the session row
+    try:
+        db.flush()  # assigns caregiver.id, needed by the session row
+    except IntegrityError:
+        # Two sign-ups with one email at the same moment: both pass the check above,
+        # and the database's unique constraint stops the second one here.
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Email already in use") from None
     return _mint_session(db, caregiver)
 
 

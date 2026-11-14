@@ -9,8 +9,7 @@ from app.models import PhonicsMastery, PhonicsPattern
 from app.schemas.difficulty import DifficultyTarget
 
 # A pattern counts as mastered once the child has tried it at least MIN_ATTEMPTS times AND
-# its confidence score (see `confidence`) is at least MASTERY_THRESHOLD. The dashboard
-# imports both numbers.
+# its confidence score (see `confidence`) is at least MASTERY_THRESHOLD.
 MASTERY_THRESHOLD = 0.8
 MIN_ATTEMPTS = 5
 # At most this many patterns in each list, so a story asks for 4 patterns at most.

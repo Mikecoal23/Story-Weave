@@ -75,7 +75,7 @@ def score_line_audio(audio_bytes: bytes, expected_line: str) -> ScoreResult:
                 ]
             )
         if result.reason == speechsdk.ResultReason.Canceled:
-            details = speechsdk.CancellationDetails.from_result(result)
+            details = result.cancellation_details
             raise RuntimeError(f"Azure Speech assessment failed: {details.error_details}")
         if result.reason != speechsdk.ResultReason.RecognizedSpeech:
             raise RuntimeError(f"Unexpected Azure Speech result: {result.reason}")

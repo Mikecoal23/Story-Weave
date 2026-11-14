@@ -18,6 +18,8 @@ class DraftStory(BaseModel):
     theme: str
     pattern_codes: tuple[str, ...]
     lines: tuple[str, ...]
+    # One name from story_generation.CHARACTERS; the frontend shows its picture. Not stored.
+    character: str = "default"
 
 
 class FallbackStoryTemplate(DraftStory):
@@ -49,6 +51,7 @@ class GenerateStoryResponse(StoryResponse):
 
     source: Literal["llm", "fallback"]
     attempts: int
+    character: str
 
 
 class ValidatedStory(DraftStory):

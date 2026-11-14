@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import AddChildForm from './AddChildForm'
+import { deleteChild } from '../api/children'
 import type { Child, Dashboard } from '../api/types'
 
 type Props = {
@@ -7,13 +8,27 @@ type Props = {
   childList: Child[]
   onChange: (child: Child) => void
   onAdded: (child: Child) => void
+  onRemoved: (child: Child) => void
   dashboard: Dashboard | null
   failed: boolean
   onRetry: () => void
 }
 
-function ParentHome({ child, childList, onChange, onAdded, dashboard, failed, onRetry }: Props) {
+function ParentHome({ child, childList, onChange, onAdded, onRemoved, dashboard, failed, onRetry }: Props) {
   const [adding, setAdding] = useState(false)
+  const [removeFailed, setRemoveFailed] = useState(false)
+
+  async function handleRemove() {
+    // Deleting can't be undone, so ask first
+    if (!child || !window.confirm(`Remove ${child.name}? This deletes all of their reading progress and can't be undone.`)) return
+    setRemoveFailed(false)
+    try {
+      await deleteChild(child.id)
+      onRemoved(child)
+    } catch {
+      setRemoveFailed(true)
+    }
+  }
 
   return (
     <section>
@@ -34,6 +49,10 @@ function ParentHome({ child, childList, onChange, onAdded, dashboard, failed, on
           <button type="button" className="pd-add" onClick={() => setAdding(true)}>
             Add child
           </button>
+          <button type="button" className="pd-add" onClick={handleRemove}>
+            Remove child
+          </button>
+          {removeFailed && <p className="pd-hint">Couldn't remove {child.name}. Try again.</p>}
         </>
       )}
       {!child ? (

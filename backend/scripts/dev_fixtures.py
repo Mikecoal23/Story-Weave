@@ -8,8 +8,7 @@ Run from backend/ (the target database comes from DATABASE_URL / backend/.env):
 The ids are fixed, so every machine and Neon `dev` get the same ones; put CAREGIVER_ID in
 frontend/src/api/config.ts and use the child ids wherever the mock children used '1'/'2'.
 Safe to re-run: each row is created only when its id is missing, and existing rows are
-never modified. Separate from scripts.seed_dev_data (random ids, different email) on
-purpose, so the two never touch each other's rows. Run scripts.seed_vocabulary first.
+never modified. Run scripts.seed_vocabulary first.
 """
 
 import argparse

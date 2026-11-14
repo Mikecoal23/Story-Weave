@@ -3,6 +3,7 @@ from unittest.mock import Mock
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
+from sqlalchemy.exc import IntegrityError
 
 from app.db.session import get_db
 from app.main import app
@@ -57,6 +58,20 @@ def test_create_caregiver_returns_409_for_taken_email() -> None:
 
     assert response.status_code == 409
     db.add.assert_not_called()
+
+
+def test_create_caregiver_returns_409_when_a_sign_up_races_on_the_email() -> None:
+    db = Mock()
+    db.scalar.return_value = None  # the email looked free when checked
+    db.flush.side_effect = IntegrityError("INSERT", {}, Exception("duplicate email"))
+
+    response = _call(
+        db, "post", "/caregivers", json={"display_name": "Sam", "email": "sam@example.com"}
+    )
+
+    assert response.status_code == 409
+    db.rollback.assert_called_once()
+    db.commit.assert_not_called()
 
 
 def test_login_finds_caregiver_and_mints_a_new_token_each_time() -> None:

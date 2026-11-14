@@ -1,6 +1,6 @@
 // Shapes mirror backend/app/schemas and backend/app/models/entities.py
 
-// `pin` is not in the backend yet (PIN routes are Sprint 3), so it stays mock-only
+// `pin` is not in the backend yet (PIN routes wait on Open Question 13); api/children.ts fills in a placeholder
 export type Child = {
   id: string // UUID
   name: string // backend field: display_name
@@ -14,10 +14,11 @@ export type Story = {
   id: string
   title: string
   theme: string | null // nullable in the backend's story.theme
+  character: string | null // one name from the agreed character list, or null
   lines: string[]
 }
 
-// Backend word statuses; the UI's neutral/correct/retry mapping is Open Question 14
+// Backend word statuses; SentenceReader.tsx maps them to colors (mastered → mint, shaky/missed → coral)
 export type WordScore = {
   expected_word: string
   recognized_word: string | null

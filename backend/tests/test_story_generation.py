@@ -53,6 +53,33 @@ def test_generate_story_draft_parses_the_llm_response(mock_anthropic_cls: MagicM
 
 
 @patch("app.services.story_generation.anthropic.Anthropic")
+def test_generate_story_draft_keeps_a_character_from_the_list(
+    mock_anthropic_cls: MagicMock,
+) -> None:
+    mock_anthropic_cls.return_value.messages.create.return_value = fake_response(
+        {"title": "T", "theme": "t", "character": "frog", "lines": ["One."]}
+    )
+
+    draft = generate_story_draft([make_pattern("digraph_sh", "SH", ["ship"])], (), frozenset())
+
+    assert draft.character == "frog"
+
+
+@pytest.mark.parametrize("payload_extra", [{"character": "zzz"}, {"character": None}, {}])
+@patch("app.services.story_generation.anthropic.Anthropic")
+def test_generate_story_draft_uses_default_for_an_unknown_or_missing_character(
+    mock_anthropic_cls: MagicMock, payload_extra: dict
+) -> None:
+    mock_anthropic_cls.return_value.messages.create.return_value = fake_response(
+        {"title": "T", "theme": "t", "lines": ["One."], **payload_extra}
+    )
+
+    draft = generate_story_draft([make_pattern("digraph_sh", "SH", ["ship"])], (), frozenset())
+
+    assert draft.character == "default"
+
+
+@patch("app.services.story_generation.anthropic.Anthropic")
 def test_generate_story_draft_accepts_json_wrapped_in_a_code_fence(
     mock_anthropic_cls: MagicMock,
 ) -> None:

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 // Chrome, Edge and Firefox record webm; Safari records mp4. Use the first one the browser supports.
 const MIME_TYPES = ['audio/webm', 'audio/mp4']
@@ -8,6 +8,18 @@ export function useRecorder(onStop: (audio: Blob) => void) {
   const [recording, setRecording] = useState(false)
   const [micBlocked, setMicBlocked] = useState(false)
   const recorder = useRef<MediaRecorder | null>(null)
+
+  // If the reader closes mid-recording, turn the mic off without uploading
+  useEffect(() => {
+    return () => {
+      const mr = recorder.current
+      if (mr && mr.state !== 'inactive') {
+        mr.onstop = null
+        mr.stop()
+        mr.stream.getTracks().forEach((track) => track.stop())
+      }
+    }
+  }, [])
 
   // Feature detection: false in browsers with no MediaRecorder or no usable audio format
   const supported =
