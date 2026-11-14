@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from app.core.config import settings
-from app.models.entities import PhonicsPattern
+from app.models import PhonicsPattern
 from app.services.story_generation import LLMNotConfiguredError, generate_story_draft
 
 
@@ -50,6 +50,33 @@ def test_generate_story_draft_parses_the_llm_response(mock_anthropic_cls: MagicM
     assert draft.theme == "a frog and a ship"
     assert draft.pattern_codes == ("digraph_sh",)
     assert draft.lines == ("A frog sat by a ship.", "The frog had a wish.")
+
+
+@patch("app.services.story_generation.anthropic.Anthropic")
+def test_generate_story_draft_keeps_a_character_from_the_list(
+    mock_anthropic_cls: MagicMock,
+) -> None:
+    mock_anthropic_cls.return_value.messages.create.return_value = fake_response(
+        {"title": "T", "theme": "t", "character": "frog", "lines": ["One."]}
+    )
+
+    draft = generate_story_draft([make_pattern("digraph_sh", "SH", ["ship"])], (), frozenset())
+
+    assert draft.character == "frog"
+
+
+@pytest.mark.parametrize("payload_extra", [{"character": "zzz"}, {"character": None}, {}])
+@patch("app.services.story_generation.anthropic.Anthropic")
+def test_generate_story_draft_uses_default_for_an_unknown_or_missing_character(
+    mock_anthropic_cls: MagicMock, payload_extra: dict
+) -> None:
+    mock_anthropic_cls.return_value.messages.create.return_value = fake_response(
+        {"title": "T", "theme": "t", "lines": ["One."], **payload_extra}
+    )
+
+    draft = generate_story_draft([make_pattern("digraph_sh", "SH", ["ship"])], (), frozenset())
+
+    assert draft.character == "default"
 
 
 @patch("app.services.story_generation.anthropic.Anthropic")
@@ -150,3 +177,49 @@ def test_a_missing_api_key_raises_before_any_call(
     with pytest.raises(LLMNotConfiguredError):
         generate_story_draft([make_pattern("digraph_sh", "SH", ["ship"])], (), frozenset({"a"}))
     mock_anthropic_cls.assert_not_called()
+
+
+def text_block(raw_text: str) -> MagicMock:
+    return MagicMock(text=raw_text)
+
+
+# A first block that is not text (a tool-use block has no `.text`).
+NON_TEXT_BLOCK = MagicMock(spec=["type", "id", "name", "input"])
+
+NOT_A_STORY = [
+    pytest.param([], id="empty content"),
+    pytest.param([NON_TEXT_BLOCK], id="first block is not text"),
+    pytest.param([text_block("[1, 2]")], id="json list"),
+    pytest.param([text_block('"just a string"')], id="json string"),
+    pytest.param([text_block("null")], id="json null"),
+    pytest.param(
+        [text_block('{"title": "T", "theme": "t", "lines": "A frog sat."}')], id="lines is a string"
+    ),
+    pytest.param(
+        [text_block('{"title": "T", "theme": "t", "lines": {"a": "b"}}')], id="lines is a dict"
+    ),
+    pytest.param(
+        [text_block('{"title": "T", "theme": "t", "lines": ["One.", 2]}')], id="a line is a number"
+    ),
+    pytest.param(
+        [text_block('{"title": 5, "theme": "t", "lines": ["One."]}')], id="title is a number"
+    ),
+    pytest.param(
+        [text_block('{"title": "T", "theme": null, "lines": ["One."]}')], id="theme is null"
+    ),
+]
+
+
+@pytest.mark.parametrize("content", NOT_A_STORY)
+@patch("app.services.story_generation.anthropic.Anthropic")
+def test_a_reply_that_is_not_a_story_raises_value_error(
+    mock_anthropic_cls: MagicMock, content: list
+) -> None:
+    # ValueError is what the pipeline counts as a bad reply (one used attempt, then a retry),
+    # so none of these may escape as AttributeError or TypeError (a 500 from the route).
+    response = MagicMock()
+    response.content = content
+    mock_anthropic_cls.return_value.messages.create.return_value = response
+
+    with pytest.raises(ValueError):
+        generate_story_draft([make_pattern("digraph_sh", "SH", ["ship"])], (), frozenset({"a"}))

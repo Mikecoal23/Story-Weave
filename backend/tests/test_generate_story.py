@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from support import throwaway_schema
 
 from app.api.routes import stories as stories_route
+from app.core.config import settings
 from app.db.session import get_db
 from app.main import app
 from app.models import (
@@ -28,8 +29,8 @@ from app.models import (
     VocabularyWord,
     VocabularyWordPattern,
 )
-from app.schemas.stories import ValidatedStory
-from app.services import story_pipeline
+from app.schemas.stories import DraftStory, ValidatedStory
+from app.services import story_generation, story_pipeline
 from app.services.story_pipeline import NoValidStoryError
 from app.services.story_templates import FALLBACK_TEMPLATES
 
@@ -106,7 +107,8 @@ def test_generate_returns_503_when_no_valid_story_exists(monkeypatch) -> None:
     response = _post_generate(db, db.get.return_value.id)
 
     assert response.status_code == 503
-    db.commit.assert_not_called()
+    db.commit.assert_called_once()  # only the commit that ends the read before the LLM step
+    db.add.assert_not_called()  # nothing was saved
 
 
 # --- real schema -----------------------------------------------------------------------
@@ -173,6 +175,7 @@ def test_generate_saves_an_llm_story_and_get_returns_it(db: Session, monkeypatch
     assert body["lines"] == ["The big dog ran.", "It is fun."]
     assert body["source"] == "llm"
     assert body["attempts"] == 2
+    assert body["character"] == "default"  # the draft set none
 
     # The generator got the child's two stretch patterns (in order), the interests and the
     # vocabulary that was loaded once for this request.
@@ -224,3 +227,107 @@ def test_generate_falls_back_to_a_template_when_the_llm_fails(db: Session, monke
     )
     assert saved_lines == body["lines"]
     assert db.get(Story, UUID(body["id"])).status == "validated"  # type: ignore[union-attr]
+
+
+def test_generate_saves_and_returns_the_whitespace_cleaned_lines(db: Session, monkeypatch) -> None:
+    child = make_child(db)
+    messy = DraftStory(
+        title="Ship  Wish",
+        theme="a frog",
+        pattern_codes=("digraph_sh",),
+        lines=("A  frog sat by a ship. ", "The frog\thad a wish."),
+    )
+    monkeypatch.setattr(story_pipeline, "generate_story_draft", Mock(return_value=messy))
+
+    response = _post_generate(db, child.id)
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["title"] == "Ship Wish"
+    assert body["lines"] == ["A frog sat by a ship.", "The frog had a wish."]
+    saved = list(
+        db.scalars(
+            select(StoryLine.text)
+            .where(StoryLine.story_id == UUID(body["id"]))
+            .order_by(StoryLine.line_number)
+        )
+    )
+    assert saved == body["lines"]  # the database holds what the child will read
+
+
+def test_no_transaction_is_open_while_the_story_is_generated(db: Session, monkeypatch) -> None:
+    # The LLM step can take up to 3 x 15 s, so the read transaction must be over by then.
+    child = make_child(db)
+    seen: dict[str, bool] = {}
+
+    def fake_generate(patterns, interests, allowed) -> ValidatedStory:
+        # Read what the real generator reads: if commit() had expired these rows, this
+        # would start a new transaction and the check below would fail.
+        for pattern in patterns:
+            _ = (pattern.code, pattern.label, pattern.example_words)
+        seen["in_transaction"] = db.in_transaction()
+        return ValidatedStory(
+            title="T", theme="t", pattern_codes=(), lines=("It is fun.",), source="llm", attempts=1
+        )
+
+    monkeypatch.setattr(stories_route, "generate_validated_story", fake_generate)
+
+    response = _post_generate(db, child.id)
+
+    assert response.status_code == 201
+    assert seen == {"in_transaction": False}
+
+
+def test_generate_sends_reinforce_and_stretch_patterns_to_the_generator(
+    db: Session, monkeypatch
+) -> None:
+    # Seam: mastery rows -> select_difficulty_target -> the patterns the generator receives.
+    child = make_child(db)
+    ids = list(
+        db.scalars(
+            select(PhonicsPattern.phonics_pattern_id).order_by(PhonicsPattern.sequence_order)
+        )
+    )
+    # Mastered (correct, attempts) for the first three patterns; confidence is
+    # (correct + 1) / (attempts + 2): 0.917, 0.833, 0.800. The two weakest are reinforced.
+    for pattern_id, (correct, attempts) in zip(ids, [(10, 10), (9, 10), (7, 8)], strict=False):
+        db.add(
+            PhonicsMastery(
+                child_id=child.id,
+                phonics_pattern_id=pattern_id,
+                mastery_score=correct / attempts,
+                attempts_count=attempts,
+                correct_count=correct,
+            )
+        )
+    db.flush()
+    draft = ValidatedStory(
+        title="T", theme="t", pattern_codes=(), lines=("It is fun.",), source="llm", attempts=1
+    )
+    generator = Mock(return_value=draft)
+    monkeypatch.setattr(stories_route, "generate_validated_story", generator)
+
+    response = _post_generate(db, child.id)
+
+    assert response.status_code == 201
+    patterns, _, _ = generator.call_args.args
+    # reinforce = ids[1], ids[2] (not the strongest, ids[0]); stretch = the next two.
+    assert [p.phonics_pattern_id for p in patterns] == [ids[1], ids[2], ids[3], ids[4]]
+
+
+def test_generate_serves_a_fallback_when_the_reply_has_no_text_block(
+    db: Session, monkeypatch
+) -> None:
+    # A reply whose first block is not text used to raise AttributeError: an HTTP 500.
+    child = make_child(db)
+    client = Mock()
+    client.messages.create.return_value = Mock(content=[Mock(spec=["type"])])
+    monkeypatch.setattr(settings, "anthropic_api_key", "test-key")
+    monkeypatch.setattr(story_generation.anthropic, "Anthropic", Mock(return_value=client))
+
+    response = _post_generate(db, child.id)
+
+    assert response.status_code == 201
+    body = response.json()
+    assert (body["source"], body["attempts"]) == ("fallback", 3)
+    assert client.messages.create.call_count == 3  # each bad reply used up one attempt

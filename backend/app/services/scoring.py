@@ -3,9 +3,9 @@ import shutil
 import subprocess
 import tempfile
 import wave
+from datetime import UTC, datetime
 from io import BytesIO
 from pathlib import Path
-from string import punctuation
 from typing import Any
 from uuid import UUID
 
@@ -13,9 +13,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.core.words import normalize_word
+from app.core.words import normalize_scored_word
 from app.models import (
-    ArticulationFlag,
     PhonicsMastery,
     ReadingAttempt,
     ReadingSession,
@@ -28,10 +27,6 @@ from app.schemas.scoring import ScoreResult, WordScore
 
 class AudioAssessmentNotConfiguredError(RuntimeError):
     """Raised when a required audio-assessment dependency is unavailable."""
-
-
-def _normalize_scored_word(word: str) -> str:
-    return normalize_word(word).strip(punctuation.replace("'", ""))
 
 
 def score_line_audio(audio_bytes: bytes, expected_line: str) -> ScoreResult:
@@ -82,11 +77,12 @@ def score_line_audio(audio_bytes: bytes, expected_line: str) -> ScoreResult:
         if result.reason == speechsdk.ResultReason.NoMatch:
             return ScoreResult(
                 words=[
-                    WordScore(expected_word=word, status="missed") for word in expected_line.split()
+                    WordScore(expected_word=word, status="missed")
+                    for word in expected_line.split()
                 ]
             )
         if result.reason == speechsdk.ResultReason.Canceled:
-            details = speechsdk.CancellationDetails.from_result(result)
+            details = result.cancellation_details
             raise RuntimeError(f"Azure Speech assessment failed: {details.error_details}")
         if result.reason != speechsdk.ResultReason.RecognizedSpeech:
             raise RuntimeError(f"Unexpected Azure Speech result: {result.reason}")
@@ -181,12 +177,62 @@ def _parse_azure_assessment(result_json: str, expected_line: str) -> ScoreResult
     return ScoreResult(words=words)
 
 
+def _take_back_earlier_reads(
+    session: Session, reading_session: ReadingSession, story_line_id: UUID
+) -> None:
+    """Latest read replaces: undo the mastery counts of this line's earlier reads in this
+    reading session and delete those attempts, so a re-recorded line is counted once.
+
+    Mirrors the forward path in `process_line_score`: a word counted toward each of its
+    patterns unless it had no vocabulary row or was a sight word, and a `mastered` word was
+    also a correct one. The `max`/`min` calls only guard the table's CHECK constraints
+    against a vocabulary link added after the first read.
+    """
+    earlier = session.scalars(
+        select(ReadingAttempt).where(
+            ReadingAttempt.reading_session_id == reading_session.id,
+            ReadingAttempt.story_line_id == story_line_id,
+        )
+    ).all()
+    if not earlier:
+        return
+
+    word_ids = {a.vocabulary_word_id for a in earlier if a.vocabulary_word_id is not None}
+    pattern_ids_by_word: dict[int, set[int]] = {}
+    for word_id, pattern_id in session.execute(
+        select(VocabularyWordPattern.vocabulary_word_id, VocabularyWordPattern.phonics_pattern_id)
+        .join(
+            VocabularyWord,
+            VocabularyWord.vocabulary_word_id == VocabularyWordPattern.vocabulary_word_id,
+        )
+        .where(
+            VocabularyWordPattern.vocabulary_word_id.in_(word_ids),
+            VocabularyWord.is_sight_word.is_(False),
+        )
+    ):
+        pattern_ids_by_word.setdefault(word_id, set()).add(pattern_id)
+
+    for attempt in earlier:
+        for pattern_id in pattern_ids_by_word.get(attempt.vocabulary_word_id, ()):
+            mastery = session.get(PhonicsMastery, (reading_session.child_id, pattern_id))
+            if mastery is None:
+                continue
+            mastery.attempts_count = max(0, mastery.attempts_count - 1)
+            if attempt.result_status == "mastered":
+                mastery.correct_count = max(0, mastery.correct_count - 1)
+            mastery.correct_count = min(mastery.correct_count, mastery.attempts_count)
+            mastery.mastery_score = (
+                mastery.correct_count / mastery.attempts_count if mastery.attempts_count else 0
+            )
+        session.delete(attempt)
+
+
 def process_line_score(
     session: Session,
     reading_session_id: UUID,
     story_line_id: UUID,
     score_result: ScoreResult,
-) -> ScoreResult:
+) -> None:
     """Persist a line's score and update the child's phonics mastery."""
     reading_session = session.get(ReadingSession, reading_session_id)
     if reading_session is None:
@@ -196,7 +242,10 @@ def process_line_score(
     if story_line is None or story_line.story_id != reading_session.story_id:
         raise ValueError("Story line does not belong to the reading session")
 
-    word_keys = {_normalize_scored_word(word.expected_word) for word in score_result.words}
+    _take_back_earlier_reads(session, reading_session, story_line_id)
+    now = datetime.now(UTC)  # one time for the whole line, stored as last_practised_at
+
+    word_keys = {normalize_scored_word(word.expected_word) for word in score_result.words}
     vocabulary_rows = session.execute(
         select(VocabularyWord, VocabularyWordPattern.phonics_pattern_id)
         .outerjoin(
@@ -213,42 +262,16 @@ def process_line_score(
         if pattern_id is not None:
             vocabulary_by_word[vocabulary_word.word][1].add(pattern_id)
 
-    # Current scoring is word-level, so pattern-targeted flags can be matched against the
-    # word's vocabulary links. Phoneme-only flags need phoneme-level Azure results.
-    flagged_pattern_ids = {
-        pattern_id
-        for pattern_id in session.scalars(
-            select(ArticulationFlag.phonics_pattern_id).where(
-                ArticulationFlag.child_id == reading_session.child_id,
-                ArticulationFlag.phonics_pattern_id.is_not(None),
-            )
-        ).all()
-        if pattern_id is not None
-    }
-
     # Mastery rows touched in this call. With autoflush off, `session.get` can't see a row
     # added earlier in the same call, so a second word with the same pattern would insert a
     # duplicate (child_id, phonics_pattern_id) row.
     mastery_by_pattern: dict[int, PhonicsMastery] = {}
 
-    classified_words: list[WordScore] = []
     for word_index, word_score in enumerate(score_result.words, start=1):
-        word_key = _normalize_scored_word(word_score.expected_word)
+        word_key = normalize_scored_word(word_score.expected_word)
         vocabulary_entry = vocabulary_by_word.get(word_key)
         vocabulary_word = vocabulary_entry[0] if vocabulary_entry else None
         pattern_ids = vocabulary_entry[1] if vocabulary_entry else set()
-        flagged_word_patterns = pattern_ids & flagged_pattern_ids
-        error_classification = (
-            "articulation"
-            if word_score.status != "mastered" and flagged_word_patterns
-            else "unclassified"
-            if word_score.status != "mastered"
-            else None
-        )
-        classified_word = word_score.model_copy(
-            update={"error_classification": error_classification}
-        )
-        classified_words.append(classified_word)
 
         session.add(
             ReadingAttempt(
@@ -261,7 +284,6 @@ def process_line_score(
                     vocabulary_word.vocabulary_word_id if vocabulary_word else None
                 ),
                 result_status=word_score.status,
-                error_classification=error_classification,
             )
         )
 
@@ -269,10 +291,6 @@ def process_line_score(
             continue
 
         for pattern_id in pattern_ids:
-            # A flagged articulation error must not count against decoding mastery, but a
-            # correctly read flagged word is still evidence of mastery.
-            if pattern_id in flagged_pattern_ids and word_score.status != "mastered":
-                continue
             mastery = mastery_by_pattern.get(pattern_id) or session.get(
                 PhonicsMastery,
                 (reading_session.child_id, pattern_id),
@@ -288,10 +306,10 @@ def process_line_score(
                 session.add(mastery)
             mastery_by_pattern[pattern_id] = mastery
 
+            mastery.last_practised_at = now
             mastery.attempts_count += 1
             if word_score.status == "mastered":
                 mastery.correct_count += 1
             mastery.mastery_score = mastery.correct_count / mastery.attempts_count
 
     session.flush()
-    return ScoreResult(words=classified_words)

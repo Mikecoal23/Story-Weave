@@ -5,11 +5,11 @@ This module is the single source of truth: scripts.seed_vocabulary makes the dat
 match it, so changing a word's category here and re-running is how a word is promoted
 or demoted between "sight word" and "pattern word".
 
-Sources: sprint1_phonics_pattern_starter_set.md (pattern metadata, sequence_order) and
+Sources: docs/sprint1_phonics_pattern_starter_set.md (pattern metadata, sequence_order) and
 the ratified word table (planning.md Decisions Log, seeding entry). Sight words are the
 Dolch list (220 words) minus every Dolch word that is a pattern word. Word endings
 (-s/-es, -ed, -ing) are generated from the base-word lists below (2026-10-30). The candidate
-words from sprint3_word_list_candidates.md (signed off by the team, 2026-11-05) are marked
+words from docs/sprint3_word_list_candidates.md (signed off by the team, 2026-11-05) are marked
 "Sprint 3" below.
 """
 
@@ -127,7 +127,7 @@ FILLER_WORDS: tuple[str, ...] = ("sat", "fell", "fun")
 # is learned by sight rather than tagged with FR.
 SIGHT_EXTRA_WORDS: tuple[str, ...] = ("friend",)
 
-# Sprint 3 (Group B of sprint3_word_list_candidates.md, plus common kid-interest words added
+# Sprint 3 (Group B of docs/sprint3_word_list_candidates.md, plus common kid-interest words added
 # 2026-11-05): allowed in stories and saved when read, but no pattern teaches them, so reading
 # them changes no mastery. `unpatterned_words` lists every such word so none goes untracked.
 UNPATTERNED_WORDS: tuple[str, ...] = (

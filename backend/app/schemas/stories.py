@@ -18,6 +18,8 @@ class DraftStory(BaseModel):
     theme: str
     pattern_codes: tuple[str, ...]
     lines: tuple[str, ...]
+    # One name from story_generation.CHARACTERS; the frontend shows its picture. Not stored.
+    character: str = "default"
 
 
 class FallbackStoryTemplate(DraftStory):
@@ -43,12 +45,13 @@ class GenerateStoryRequest(BaseModel):
 class GenerateStoryResponse(StoryResponse):
     """Response from POST /stories/generate: the saved story plus how it was produced.
 
-    `source` is "fallback" when no LLM draft passed validation (Open Question 16: returned
-    here only, not stored); `attempts` is how many LLM drafts were requested.
+    `source` is "fallback" when no LLM draft passed validation (it is also stored on the
+    story row); `attempts` is how many LLM drafts were requested (returned here only).
     """
 
     source: Literal["llm", "fallback"]
     attempts: int
+    character: str
 
 
 class ValidatedStory(DraftStory):

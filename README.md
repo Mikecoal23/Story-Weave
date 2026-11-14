@@ -23,11 +23,6 @@ One reading session, step by step, and where each step lives in the code:
 7. **Show the caregiver.** The parent dashboard shows sessions this week, the last story, the patterns being practised, the strongest pattern and words to try at home.
    `GET /children/{id}/dashboard` → `backend/app/services/dashboard.py`
 
-Errors on words linked to a child's flagged articulation pattern remain visible but are
-classified as articulation and excluded from that pattern's decoding-mastery counts.
-Unflagged word-level errors are stored as unclassified, not assumed to be decoding errors.
-Phoneme-only flags await phoneme-level assessment and attribution.
-
 ## What works today
 
 - **Working:** the whole loop above, in the browser, against a real database, Azure Speech and Claude. After a child reads a line, each word turns mint (read well) or coral (try again). The parent dashboard shows real data. With the current vocabulary, Claude's stories almost always pass the word check, so the pre-written stories are rarely needed.
@@ -82,14 +77,6 @@ Then add your keys to `backend/.env`:
 |---|---|---|
 | `ANTHROPIC_API_KEY` | Claude writing stories | You always get a pre-written story |
 | `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION` | Scoring a read line | The audio route returns 502 |
-| `MERRIAM_WEBSTER_API_KEY` | Looking up word definitions, phonetics and pronunciation audio | Word lookup shows an error |
-
-Use a Merriam-Webster School Dictionary API key for `MERRIAM_WEBSTER_API_KEY`.
-The key is used only by the backend and must not be added to frontend environment
-variables or committed. In the reader, children can tap any word for its definition
-and phonetic spelling; after scoring, the first shaky or missed word is looked up
-automatically. The pronunciation button appears disabled when the dictionary entry
-doesn't include audio.
 
 ### 3. Load the vocabulary and demo data
 

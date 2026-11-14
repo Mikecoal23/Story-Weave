@@ -186,3 +186,25 @@ def test_child_with_sessions_and_mastery(db: Session) -> None:
         # Newest first, punctuation stripped, no repeats; "the" was mastered so it is left out.
         "try_at_home": ["ship", "chop", "old"],
     }
+
+
+def test_strongest_uses_the_engines_mastery_rule(db: Session) -> None:
+    # 4 out of 5: the stored score is 0.8, but the engine's confidence is 5/7 (0.71), so the
+    # pattern is still being worked on and must not also show as strongest.
+    child = make_child(db)
+    p1 = patterns(db)[0]
+    db.add(
+        PhonicsMastery(
+            child_id=child.id,
+            phonics_pattern_id=p1.phonics_pattern_id,
+            mastery_score=0.8,
+            attempts_count=5,
+            correct_count=4,
+        )
+    )
+    db.flush()
+
+    body = _get_dashboard(db, child.id).json()
+
+    assert p1.label in body["working_on"]
+    assert body["strongest"] is None

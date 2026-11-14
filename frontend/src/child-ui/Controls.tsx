@@ -6,11 +6,13 @@ import { useRecorder } from './useRecorder'
 type Props = {
   sessionId: string | null
   lineNumber: number // 1-based, as the backend expects
+  line: string
+  tried: boolean // true once this line has been scored; "Hear it" waits for it so scores stay honest
   onScored: (scores: WordScore[]) => void
   onNext: () => void
 }
 
-function Controls({ sessionId, lineNumber, onScored, onNext }: Props) {
+function Controls({ sessionId, lineNumber, line, tried, onScored, onNext }: Props) {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
 
@@ -35,6 +37,14 @@ function Controls({ sessionId, lineNumber, onScored, onNext }: Props) {
     else start()
   }
 
+  // Reads the line aloud with the browser's built-in voice
+  function hearLine() {
+    speechSynthesis.cancel() // stop any earlier line still being read
+    const utterance = new SpeechSynthesisUtterance(line)
+    utterance.rate = 0.8 // a little slower for early readers
+    speechSynthesis.speak(utterance)
+  }
+
   return (
     <>
       {!supported && <p>Recording isn't supported in this browser. Try Chrome, Edge or Safari.</p>}
@@ -44,7 +54,8 @@ function Controls({ sessionId, lineNumber, onScored, onNext }: Props) {
         {uploading ? 'Checking…' : recording ? 'Listening… click to stop' : 'Click to speak'}
       </button>
       <footer className="bottom-bar">
-        <button className="btn btn-outline" onClick={() => console.log('Hear it')}>
+        {/* Off while recording or uploading, so the mic never scores the computer's voice */}
+        <button className="btn btn-outline" onClick={hearLine} disabled={!tried || recording || uploading}>
           Hear it
         </button>
         <button className="btn btn-green" onClick={onNext} disabled={recording || uploading}>

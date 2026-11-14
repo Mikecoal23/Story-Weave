@@ -42,13 +42,21 @@ def generate_story(
         .order_by(PhonicsPattern.sequence_order)
     ).all()
     allowed = load_allowed_vocabulary(db)
+    interests = tuple(child.interests)
+
+    # Everything the LLM step needs is loaded, so end the read transaction now: the LLM calls
+    # can take up to 3 x 15 s, and an open transaction would hold a database connection.
+    # commit(), not rollback(): rollback() expires every loaded object, and reading an expired
+    # `patterns` row inside the LLM step would silently start a new transaction. commit() keeps
+    # them because SessionLocal has expire_on_commit=False. `child` is not used after this.
+    db.commit()
 
     try:
-        validated = generate_validated_story(patterns, tuple(child.interests), allowed)
+        validated = generate_validated_story(patterns, interests, allowed)
     except NoValidStoryError as error:
         raise HTTPException(status_code=503, detail="No valid story could be produced") from error
 
-    story = save_validated_story(db, child.id, validated)
+    story = save_validated_story(db, body.child_id, validated)
     db.commit()
     return GenerateStoryResponse(
         id=story.id,
@@ -57,4 +65,5 @@ def generate_story(
         lines=list(validated.lines),
         source=validated.source,
         attempts=validated.attempts,
+        character=validated.character,
     )

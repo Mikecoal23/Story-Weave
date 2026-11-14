@@ -4,7 +4,7 @@ from collections.abc import Sequence
 import anthropic
 
 from app.core.config import settings
-from app.models.entities import PhonicsPattern
+from app.models import PhonicsPattern
 from app.schemas.stories import DraftStory
 
 # A live call takes about 2 s (measured 2026-10-23). The SDK default is a 600 s read timeout
@@ -12,11 +12,31 @@ from app.schemas.stories import DraftStory
 _REQUEST_TIMEOUT_SECONDS = 15.0
 
 
+# Must match the names in the frontend's characterEmoji map (child-ui/ChildApp.tsx).
+CHARACTERS = (
+    "fish",
+    "frog",
+    "dragon",
+    "rocket",
+    "dinosaur",
+    "cat",
+    "dog",
+    "unicorn",
+    "robot",
+    "bear",
+    "bird",
+    "bug",
+    "ship",
+    "default",
+)
+
+
 class LLMNotConfiguredError(RuntimeError):
     """ANTHROPIC_API_KEY is not set, so no draft can be requested."""
 
 
-_SYSTEM_PROMPT = """You write short decodable stories for children in grades 1-3 learning to read.
+_SYSTEM_PROMPT = (
+    """You write short decodable stories for children in grades 1-3 learning to read.
 
 Rules:
 - Use ONLY words from the allowed vocabulary list. Never use a word that is not in that list.
@@ -29,9 +49,14 @@ Rules:
   word that is not in it.
 - The story must be 6-8 lines, one short sentence per line.
 - Work in as many of the target phonics patterns as you naturally can.
+- Pick the "character" that best fits the story from this list: """
+    + ", ".join(CHARACTERS)
+    + """.
+  If none fit, use "default".
 - Respond with ONLY a JSON object, no other text, shaped exactly like:
-  {"title": "...", "theme": "...", "lines": ["...", "...", ...]}
+  {"title": "...", "theme": "...", "character": "...", "lines": ["...", "...", ...]}
 """
+)
 
 
 def _build_user_prompt(
@@ -97,11 +122,25 @@ def generate_story_draft(
             }
         ],
     )
-    raw_text = message.content[0].text
+    # Every "this reply is not a story" case raises ValueError, which the pipeline counts as
+    # a bad reply (one used attempt). A non-text first block has no `.text`.
+    raw_text = getattr(message.content[0], "text", None) if message.content else None
+    if not isinstance(raw_text, str):
+        raise ValueError("The reply has no text block")
     data = json.loads(_extract_json_object(raw_text))
+    if not isinstance(data, dict):
+        raise ValueError("The reply is not a JSON object")
+    lines = data["lines"]
+    if not isinstance(lines, list) or not all(isinstance(line, str) for line in lines):
+        raise ValueError("The reply's lines are not a list of strings")
+    # A missing or unknown character isn't worth a retry; just show the default.
+    character = data.get("character")
+    if character not in CHARACTERS:
+        character = "default"
     return DraftStory(
         title=data["title"],
         theme=data["theme"],
         pattern_codes=tuple(pattern.code for pattern in patterns),
-        lines=tuple(data["lines"]),
+        lines=tuple(lines),
+        character=character,
     )

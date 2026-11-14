@@ -8,8 +8,7 @@ Run from backend/ (the target database comes from DATABASE_URL / backend/.env):
 The ids are fixed, so every machine and Neon `dev` get the same ones; put CAREGIVER_ID in
 frontend/src/api/config.ts and use the child ids wherever the mock children used '1'/'2'.
 Safe to re-run: each row is created only when its id is missing, and existing rows are
-never modified. Separate from scripts.seed_dev_data (random ids, different email) on
-purpose, so the two never touch each other's rows. Run scripts.seed_vocabulary first.
+never modified. Run scripts.seed_vocabulary first.
 """
 
 import argparse
@@ -24,8 +23,7 @@ from app.models import Caregiver, Child, PhonicsPattern, Story
 from app.schemas.stories import ValidatedStory
 from app.services.story_store import save_validated_story
 from app.services.story_templates import FALLBACK_TEMPLATES
-
-LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
+from scripts.seed_vocabulary import LOCAL_HOSTS
 
 CAREGIVER_ID = UUID("f1000000-0000-4000-8000-000000000001")
 CAREGIVER_EMAIL = "fixtures.caregiver@example.com"

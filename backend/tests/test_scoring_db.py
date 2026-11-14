@@ -105,8 +105,13 @@ def test_a_second_line_adds_to_the_existing_mastery_row(db: Session) -> None:
         words=[WordScore(expected_word=w, status="mastered") for w in line.text.split()]
     )
 
+    # The same line read in two reading sessions (not twice in one: that replaces the read).
+    second_reading = ReadingSession(child_id=reading.child_id, story_id=reading.story_id)
+    db.add(second_reading)
+    db.flush()
+
     process_line_score(db, reading.id, line.id, all_mastered)
-    process_line_score(db, reading.id, line.id, all_mastered)
+    process_line_score(db, second_reading.id, line.id, all_mastered)
 
     assert mastery_by_code(db, reading)["blend_bl"] == (4, 4)
 

@@ -5,11 +5,12 @@ from collections.abc import Sequence
 import anthropic
 
 from app.core.config import settings
-from app.models.entities import PhonicsPattern
+from app.core.words import normalize_scored_word
+from app.models import PhonicsPattern
 from app.schemas.stories import DraftStory, FallbackStoryTemplate, ValidatedStory
 from app.services.story_generation import LLMNotConfiguredError, generate_story_draft
 from app.services.story_templates import FALLBACK_TEMPLATES
-from app.services.vocabulary_validator import validate_story
+from app.services.vocabulary_validator import tokenize, validate_story
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +23,7 @@ _BAD_REPLY_ERRORS = (ValueError, KeyError, IndexError, TypeError)
 
 _BAD_REPLY_FEEDBACK = (
     "Your reply could not be parsed. Respond with ONLY the JSON object "
-    '{"title": "...", "theme": "...", "lines": ["...", ...]} and nothing else.'
+    '{"title": "...", "theme": "...", "character": "...", "lines": ["...", ...]} and nothing else.'
 )
 
 
@@ -40,7 +41,14 @@ def _unknown_words_feedback(draft: DraftStory, unknown_words: tuple[str, ...]) -
     Measured 2026-10-30: when asked to rewrite the whole story, each retry fixed the named
     words but brought in new unknown ones, so the draft is sent back to be edited instead.
     """
-    previous = json.dumps({"title": draft.title, "theme": draft.theme, "lines": list(draft.lines)})
+    previous = json.dumps(
+        {
+            "title": draft.title,
+            "theme": draft.theme,
+            "character": draft.character,
+            "lines": list(draft.lines),
+        }
+    )
     return (
         f"It used words that are not in the allowed vocabulary: {', '.join(unknown_words)}. "
         f"Here is that story: {previous} "
@@ -49,11 +57,48 @@ def _unknown_words_feedback(draft: DraftStory, unknown_words: tuple[str, ...]) -
     )
 
 
+def clean_whitespace(text: str) -> str:
+    """One space between words, none at the ends ("A  frog   sat. " -> "A frog sat.").
+
+    The scorer splits a line with `.split()` and the reader screen with `.split(' ')`; they
+    agree only when the line has single spaces, so every saved line goes through this.
+    """
+    return " ".join(text.split())
+
+
+def clean_draft(draft: DraftStory) -> DraftStory:
+    """The draft with whitespace cleaned in the title, theme and every line."""
+    return draft.model_copy(
+        update={
+            "title": clean_whitespace(draft.title),
+            "theme": clean_whitespace(draft.theme),
+            "lines": tuple(clean_whitespace(line) for line in draft.lines),
+        }
+    )
+
+
+def unscorable_word(line: str) -> str | None:
+    """The first word of a cleaned line that scoring would read differently from the
+    validator, or None.
+
+    The validator (`tokenize`) drops all punctuation and splits on dashes; the scorer
+    (`normalize_scored_word`) trims only ASCII punctuation from the ends of each space-
+    separated word. A word is safe only if both give the same single word, which fails for
+    curly double quotes ("“Hi,”"), dashes joining words ("ran—fast", "well-known") and a
+    lone dash or symbol ("-", "&").
+    """
+    for word in line.split():
+        if tokenize(word) != [normalize_scored_word(word)]:
+            return word
+    return None
+
+
 def shape_problem(draft: DraftStory) -> str | None:
     """Why a draft can't be saved or read as a story, as feedback for the model; None if fine.
 
     Checks only what would break: no lines, a blank line, a missing or over-long title, an
-    over-long theme. The 6-8 line count the prompt asks for is not enforced.
+    over-long theme, a word the scorer could not match. The 6-8 line count the prompt asks
+    for is not enforced. Expects a draft that went through `clean_draft`.
     """
     if not draft.lines:
         return "The story had no lines. Write 6-8 lines."
@@ -63,6 +108,14 @@ def shape_problem(draft: DraftStory) -> str | None:
         return f"The title must be 1-{MAX_TITLE_LENGTH} characters."
     if len(draft.theme) > MAX_THEME_LENGTH:
         return f"The theme must be at most {MAX_THEME_LENGTH} characters."
+    for line in draft.lines:
+        word = unscorable_word(line)
+        if word is not None:
+            return (
+                f"The word '{word}' is not one plain word. Write each word with plain letters, "
+                "put a space between words (no dashes or slashes joining them), and use only "
+                "straight quote marks, not curly ones."
+            )
     return None
 
 
@@ -110,6 +163,7 @@ def generate_validated_story(
 
         if draft is None:
             continue
+        draft = clean_draft(draft)  # everything below, and what is saved, sees clean lines
         problem = shape_problem(draft)
         if problem is not None:
             logger.warning("story attempt %d/%d rejected: %s", attempt, attempts, problem)

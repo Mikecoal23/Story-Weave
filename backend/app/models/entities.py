@@ -103,7 +103,10 @@ class VocabularyWordPattern(Base):
 class Story(Base):
     __tablename__ = "story"
     __table_args__ = (
-        CheckConstraint("status IN ('draft', 'validated', 'approved')", name="ck_story_status"),
+        CheckConstraint(
+            "status IN ('draft', 'validated', 'approved')", name="ck_story_status"
+        ),
+        CheckConstraint("source IS NULL OR source IN ('llm', 'fallback')", name="ck_story_source"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -113,6 +116,7 @@ class Story(Base):
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     theme: Mapped[str | None] = mapped_column(String(120))
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="draft")
+    source: Mapped[str | None] = mapped_column(String(20))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
@@ -185,6 +189,7 @@ class PhonicsMastery(Base):
     mastery_score: Mapped[float] = mapped_column(Numeric(4, 3), nullable=False, default=0)
     attempts_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     correct_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    last_practised_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
@@ -197,11 +202,6 @@ class ReadingAttempt(Base):
         CheckConstraint(
             "result_status IN ('mastered', 'shaky', 'missed')",
             name="ck_reading_attempt_result_status",
-        ),
-        CheckConstraint(
-            "error_classification IS NULL OR "
-            "error_classification IN ('articulation', 'unclassified')",
-            name="ck_reading_attempt_error_classification",
         ),
         Index("ix_reading_attempt_session_line", "reading_session_id", "story_line_id"),
     )
@@ -220,7 +220,6 @@ class ReadingAttempt(Base):
         ForeignKey("vocabulary_word.vocabulary_word_id", ondelete="SET NULL")
     )
     result_status: Mapped[str] = mapped_column(String(20), nullable=False)
-    error_classification: Mapped[str | None] = mapped_column(String(20))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 

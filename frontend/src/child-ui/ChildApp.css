@@ -35,6 +35,160 @@
   background: #efd4d4;
 }
 
+/* Background scenes picked by the story's character (Step 4b). Unknown names and default keep the look above. */
+/* Ocean floor scene. Background layers are listed top to bottom: bubbles, sand, then the water. */
+.theme-fish {
+  background:
+    /* bubbles: a transparent middle with a white ring around it */
+    radial-gradient(circle at 7% 45%, transparent 1rem, #fff 1rem 1.25rem, transparent 1.3rem),
+    radial-gradient(circle at 11% 34%, transparent 0.6rem, #fff 0.6rem 0.8rem, transparent 0.85rem),
+    radial-gradient(circle at 6% 26%, transparent 0.4rem, #fff 0.4rem 0.55rem, transparent 0.6rem),
+    radial-gradient(circle at 92% 22%, transparent 0.7rem, #fff 0.7rem 0.9rem, transparent 0.95rem),
+    /* sand: two wide ovals cut off by the bottom edge, so they look like dunes */
+    radial-gradient(45% 4rem at 20% 100%, #f3e3b8 99%, transparent 100%),
+    radial-gradient(40% 3rem at 60% 100%, #efdcaa 99%, transparent 100%),
+    /* water: lighter near the surface, deeper blue lower down */
+    linear-gradient(to bottom, #e6f5ff, #bfe3f7);
+}
+/* top-left circle: sunlight coming through the water */
+.theme-fish::before { background: #d6eefc; }
+/* right circle moves to the bottom corner and becomes a coral rock */
+.theme-fish::after {
+  top: auto;
+  bottom: -12rem;
+  background: #f7cdbf;
+}
+
+/* Sea surface scene for the ship: sky on top, sea below a hard horizon line. Layers: wave foam, then sky and sea. */
+.theme-ship {
+  background:
+    /* foam: small white ovals on the water like wave tops */
+    radial-gradient(3rem 0.4rem at 15% 72%, #fff 99%, transparent 100%),
+    radial-gradient(4rem 0.4rem at 80% 80%, #fff 99%, transparent 100%),
+    radial-gradient(2.5rem 0.35rem at 40% 90%, #fff 99%, transparent 100%),
+    /* sky and sea in one gradient: two colors meeting at 62% with no blend, which makes the horizon */
+    linear-gradient(to bottom, #e3f2ff 62%, #bfe3f7 62%);
+}
+/* top-left circle: the sun */
+.theme-ship::before { background: #f7e3a0; }
+/* right circle moves to the top corner and becomes a white cloud */
+.theme-ship::after {
+  top: -10rem;
+  background: #fff;
+}
+
+/* Space scene: a pale twilight sky (not dark, so black text stays readable). Layers: stars, small planet, then the sky. */
+.theme-rocket,
+.theme-robot {
+  background:
+    /* stars: small solid dots spread around the edges, away from the sentence */
+    radial-gradient(circle at 30% 14%, #f2d27a 0.3rem, transparent 0.35rem),
+    radial-gradient(circle at 70% 10%, #f2d27a 0.4rem, transparent 0.45rem),
+    radial-gradient(circle at 88% 30%, #f2d27a 0.25rem, transparent 0.3rem),
+    radial-gradient(circle at 15% 70%, #f2d27a 0.35rem, transparent 0.4rem),
+    radial-gradient(circle at 80% 75%, #f2d27a 0.3rem, transparent 0.35rem),
+    radial-gradient(circle at 45% 85%, #f2d27a 0.25rem, transparent 0.3rem),
+    /* small planet where the peach circle used to be */
+    radial-gradient(circle at 6% 48%, #c8e6f7 2.5rem, transparent 2.55rem),
+    /* sky: deeper lavender at the top, lighter toward the bottom */
+    linear-gradient(to bottom, #d9d3f5, #f1efff);
+}
+/* top-left circle: a pale yellow moon */
+.theme-rocket::before,
+.theme-robot::before { background: #f7edc4; }
+/* right circle: a big pink planet */
+.theme-rocket::after,
+.theme-robot::after { background: #f2c6d8; }
+
+/* Nature scene: sky with a cloud, green hills along the bottom. Layers: cloud, hills, then the sky. */
+.theme-frog,
+.theme-bear,
+.theme-bug,
+.theme-dinosaur {
+  background:
+    /* cloud: three overlapping white circles at the top right */
+    radial-gradient(circle at 70% 12%, #fff 1.6rem, transparent 1.65rem),
+    radial-gradient(circle at 74% 10%, #fff 2rem, transparent 2.05rem),
+    radial-gradient(circle at 78% 13%, #fff 1.4rem, transparent 1.45rem),
+    /* hills: wide ovals cut off by the bottom edge, the front one a little darker */
+    radial-gradient(40% 4rem at 25% 100%, #c6e3ad 99%, transparent 100%),
+    radial-gradient(50% 6rem at 70% 100%, #d9eec6 99%, transparent 100%),
+    /* sky: light blue at the top fading to almost white */
+    linear-gradient(to bottom, #dcefff, #f6fbf2);
+}
+/* top-left circle: the sun */
+.theme-frog::before,
+.theme-bear::before,
+.theme-bug::before,
+.theme-dinosaur::before { background: #f7e3a0; }
+/* right circle moves to the bottom corner and becomes a big bush */
+.theme-frog::after,
+.theme-bear::after,
+.theme-bug::after,
+.theme-dinosaur::after {
+  top: auto;
+  bottom: -12rem;
+  background: #b9dc9c;
+}
+
+/* Magic scene: pastel sky with a rainbow and sparkles. Layers: sparkles, rainbow, then the sky. */
+.theme-unicorn,
+.theme-dragon,
+.theme-bird {
+  background:
+    /* sparkles: small pink and purple dots around the edges */
+    radial-gradient(circle at 28% 12%, #e8a6d0 0.3rem, transparent 0.35rem),
+    radial-gradient(circle at 66% 9%, #c9a6ec 0.35rem, transparent 0.4rem),
+    radial-gradient(circle at 90% 26%, #e8a6d0 0.25rem, transparent 0.3rem),
+    radial-gradient(circle at 84% 70%, #c9a6ec 0.3rem, transparent 0.35rem),
+    radial-gradient(circle at 50% 88%, #e8a6d0 0.25rem, transparent 0.3rem),
+    /* rainbow: rings of color around the bottom-left corner, so only a quarter-arc shows */
+    radial-gradient(
+      circle at 0% 100%,
+      transparent 14rem,
+      #f7c6c6 14rem 15rem,
+      #f7e3a0 15rem 16rem,
+      #c6e3ad 16rem 17rem,
+      #c8e6f7 17rem 18rem,
+      #e6c3ef 18rem 19rem,
+      transparent 19rem
+    ),
+    /* sky: soft pink at the top fading to pale lavender */
+    linear-gradient(to bottom, #fde6f1, #f3eefc);
+}
+/* top-left circle: a pale lilac glow */
+.theme-unicorn::before,
+.theme-dragon::before,
+.theme-bird::before { background: #ead7f5; }
+/* right circle: a pink magic moon */
+.theme-unicorn::after,
+.theme-dragon::after,
+.theme-bird::after { background: #f7d0e2; }
+
+/* Cozy scene: a warm room with a wooden floor, a rug and a yarn ball. Layers: yarn ball, rug, floor, then the wall. */
+.theme-cat,
+.theme-dog {
+  background:
+    /* yarn ball: its center is 6rem up, so it sits on top of the 4.5rem floor */
+    radial-gradient(circle at 12% calc(100% - 6rem), #c9c2f2 1.5rem, transparent 1.55rem),
+    /* rug: a flat oval on the floor */
+    radial-gradient(35% 2rem at 50% calc(100% - 2.25rem), #f2c6d8 99%, transparent 100%),
+    /* floor: a solid strip 4.5rem tall along the bottom */
+    linear-gradient(to top, #ecd6b6 4.5rem, transparent 4.5rem),
+    /* wall: warm cream */
+    linear-gradient(to bottom, #fff3e2, #fff8ee);
+}
+/* top-left circle: warm lamp light */
+.theme-cat::before,
+.theme-dog::before { background: #f7e3a0; }
+/* right circle moves to the bottom corner and becomes a round pet bed */
+.theme-cat::after,
+.theme-dog::after {
+  top: auto;
+  bottom: -14rem;
+  background: #efc9b8;
+}
+
 /* Top bar, sentence and buttons sit above the circles */
 .screen > * {
   position: relative;
@@ -82,6 +236,14 @@
   color: #000;
   background: #c8e6cd;
   border-radius: 999px;
+}
+
+/* Story character emoji, centered between the top bar and the sentence */
+.reader-character {
+  align-self: center;
+  margin-top: 1.5rem;
+  font-size: clamp(3rem, 8vw, 5rem);
+  line-height: 1;
 }
 
 .reader {

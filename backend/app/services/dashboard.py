@@ -1,11 +1,10 @@
 from datetime import UTC, datetime, timedelta
-from string import punctuation
 from uuid import UUID
 
 from sqlalchemy import exists, func, select
 from sqlalchemy.orm import Session
 
-from app.core.words import normalize_word
+from app.core.words import normalize_scored_word
 from app.models import (
     PhonicsMastery,
     PhonicsPattern,
@@ -14,7 +13,7 @@ from app.models import (
     Story,
 )
 from app.schemas.dashboard import DashboardResponse, PatternProgress
-from app.services.difficulty import MASTERY_THRESHOLD, MIN_ATTEMPTS, select_difficulty_target
+from app.services.difficulty import confidence, is_mastered, select_difficulty_target
 
 WEEK = timedelta(days=7)
 MAX_PRACTICE_WORDS = 5
@@ -32,14 +31,19 @@ def build_dashboard(db: Session, child_id: UUID) -> DashboardResponse:
         .order_by(PhonicsPattern.sequence_order)
     ).all()
 
+    # Same mastery rule as the difficulty engine, so a pattern can't be both
+    # "strongest" and "working on".
     mastered = [
         (pattern, mastery)
         for pattern, mastery in rows
-        if mastery.attempts_count >= MIN_ATTEMPTS
-        and float(mastery.mastery_score) >= MASTERY_THRESHOLD
+        if is_mastered(mastery.correct_count, mastery.attempts_count)
     ]
     # max() keeps the first of equal scores, so a tie goes to the earlier pattern.
-    best = max(mastered, key=lambda row: float(row[1].mastery_score), default=None)
+    best = max(
+        mastered,
+        key=lambda row: confidence(row[1].correct_count, row[1].attempts_count),
+        default=None,
+    )
     strongest = best[0].label if best else None
 
     # Same patterns the next story practises, so the dashboard follows the difficulty engine.
@@ -103,7 +107,7 @@ def _practice_words(db: Session, child_id: UUID) -> list[str]:
     words: list[str] = []
     for expected in expected_words:
         # Expected words keep the line's punctuation ("ship."), so strip it, but keep apostrophes.
-        word = normalize_word(expected).strip(punctuation.replace("'", ""))
+        word = normalize_scored_word(expected)
         if word and word not in words:
             words.append(word)
         if len(words) == MAX_PRACTICE_WORDS:
