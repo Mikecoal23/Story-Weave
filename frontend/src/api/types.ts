@@ -6,7 +6,7 @@ export type Child = {
   name: string // backend field: display_name
   interests: string[]
   gradeLevel: number
-  pin: string
+  pinSet: boolean
 }
 
 // Same shape as the backend's DraftStory, plus the id once it is saved

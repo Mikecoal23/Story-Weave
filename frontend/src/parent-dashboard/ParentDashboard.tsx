@@ -70,6 +70,7 @@ function ParentDashboard({ childList, onChildrenChanged, onLogout }: Props) {
             onChange={setChild}
             onAdded={handleAdded}
             onRemoved={handleRemoved}
+            onChildrenChanged={onChildrenChanged}
             dashboard={dashboard}
             failed={failed}
             onRetry={() => setAttempt(attempt + 1)}

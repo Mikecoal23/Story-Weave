@@ -26,7 +26,8 @@ One reading session, step by step, and where each step lives in the code:
 ## What works today
 
 - **Working:** the whole loop above, in the browser, against a real database, Azure Speech and Claude. After a child reads a line, each word turns mint (read well) or coral (try again). The parent dashboard shows real data. With the current vocabulary, Claude's stories almost always pass the word check, so the pre-written stories are rarely needed.
-- **Placeholders:** login is an email lookup with no password, the login token isn't checked by any other route, and both PINs are `1234`. Real PINs are planned for Sprint 4.
+- **Limitations:** caregiver login is still an email lookup with no password. Child management and PIN routes require the caregiver session token; other reading/story routes are not yet protected by it.
+- **PINs:** caregivers choose a four-digit PIN when creating an account; children get a four-digit PIN when added. Caregivers can view or reset their children's PINs from the Parent Home screen. Caregiver PINs are salted scrypt hashes; child PINs are encrypted with `PIN_ENCRYPTION_KEY`.
 - **Not tried yet:** a child's voice. Scoring has only been tested with adult and computer-generated voices.
 
 See `planning.md` §2 for the full, dated list.
@@ -70,6 +71,7 @@ uv run alembic upgrade head
 - `cp .env.example .env` creates your private settings file. It is git-ignored, so keys never get committed.
 - `uv sync` installs the Python packages.
 - `alembic upgrade head` creates the 13 tables.
+- Set `PIN_ENCRYPTION_KEY` in `backend/.env` to a new Fernet key. Generate one with `uv run python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`. Keep it private and stable: changing it makes existing child PINs unreadable.
 
 Then add your keys to `backend/.env`:
 
@@ -77,6 +79,7 @@ Then add your keys to `backend/.env`:
 |---|---|---|
 | `ANTHROPIC_API_KEY` | Claude writing stories | You always get a pre-written story |
 | `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION` | Scoring a read line | The audio route returns 502 |
+| `PIN_ENCRYPTION_KEY` | Encrypting and viewing child PINs | Child PIN creation and recovery fail explicitly |
 
 ### 3. Load the vocabulary and demo data
 
@@ -89,6 +92,7 @@ uv run python -m scripts.dev_fixtures
 
 - `seed_vocabulary` loads the 9 phonics patterns and the approved words from `scripts/seed_data.py`, and prints how many it added and removed. It's safe to run again: a second run changes nothing.
 - `dev_fixtures` adds one caregiver, two children (Mia and Leo) and one story, always with the same ids, so the frontend and the demo commands below work on every machine.
+- New fixtures use parent PIN `1234`, Mia's PIN `1234`, and Leo's PIN `5678`. Existing fixture rows are left untouched; if you already had fixtures before this update, set the children's PINs from Parent Home.
 - Both scripts refuse to touch a database that isn't on your machine unless you add `--allow-remote`, and `--dry-run` shows what would change without saving it. Keep daily seeding local; shared Neon seeding follows the approval and dry-run rules below.
 
 The fixed ids:
@@ -117,7 +121,7 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173` and log in with the fixture caregiver's email, `fixtures.caregiver@example.com` (or click **New here? Create an account** to make your own). Choose **Child → Mia**, enter PIN `1234` and press Start. The story takes a few seconds while Claude is asked. Click the mic, read the line, then click again to stop; the words change colour once the line is scored. For the parent side, choose **Parent** and enter PIN `1234`. The login screen shows whether it can reach the backend. `USE_MOCKS` in `frontend/src/api/config.ts` can switch any part back to sample data; everything uses the real backend by default.
+Open `http://localhost:5173` and log in with the fixture caregiver's email, `fixtures.caregiver@example.com` (or click **New here? Create an account** to make your own). For the local fixture, Mia's PIN and the parent PIN are `1234`; Leo's PIN is `5678`. For the parent side, choose **Parent** and enter the parent PIN. Caregivers can view and change child PINs on the Home tab.
 
 ## Checks
 

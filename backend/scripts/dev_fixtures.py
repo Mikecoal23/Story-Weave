@@ -19,6 +19,7 @@ from sqlalchemy import select
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session
 
+from app.core.pins import encrypt_pin, hash_pin
 from app.models import Caregiver, Child, PhonicsPattern, Story
 from app.schemas.stories import ValidatedStory
 from app.services.story_store import save_validated_story
@@ -32,8 +33,8 @@ LEO_ID = UUID("f1000000-0000-4000-8000-0000000000a2")
 STORY_ID = UUID("f1000000-0000-4000-8000-0000000000b1")
 
 CHILDREN = [
-    (MIA_ID, "Mia", 1, ["dinosaurs", "the ocean"]),
-    (LEO_ID, "Leo", 1, ["trucks", "space"]),
+    (MIA_ID, "Mia", 1, ["dinosaurs", "the ocean"], "1234"),
+    (LEO_ID, "Leo", 1, ["trucks", "space"], "5678"),
 ]
 
 
@@ -44,11 +45,16 @@ def seed_fixtures(session: Session) -> dict[str, str]:
 
     if session.get(Caregiver, CAREGIVER_ID) is None:
         session.add(
-            Caregiver(id=CAREGIVER_ID, display_name="Fixtures Caregiver", email=CAREGIVER_EMAIL)
+            Caregiver(
+                id=CAREGIVER_ID,
+                display_name="Fixtures Caregiver",
+                email=CAREGIVER_EMAIL,
+                pin_hash=hash_pin("1234"),
+            )
         )
         session.flush()
 
-    for child_id, name, grade_level, interests in CHILDREN:
+    for child_id, name, grade_level, interests, pin in CHILDREN:
         if session.get(Child, child_id) is None:
             session.add(
                 Child(
@@ -57,6 +63,7 @@ def seed_fixtures(session: Session) -> dict[str, str]:
                     display_name=name,
                     grade_level=grade_level,
                     interests=interests,
+                    pin_ciphertext=encrypt_pin(pin),
                 )
             )
             session.flush()

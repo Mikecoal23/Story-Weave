@@ -29,6 +29,9 @@ class Caregiver(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     display_name: Mapped[str] = mapped_column(String(120), nullable=False)
     email: Mapped[str | None] = mapped_column(String(320), unique=True)
+    pin_hash: Mapped[str | None] = mapped_column(String(128))
+    pin_failed_attempts: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=0)
+    pin_locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
@@ -57,7 +60,12 @@ class Child(Base):
     interests: Mapped[list[str]] = mapped_column(
         JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb")
     )
+    pin_ciphertext: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    @property
+    def pin_set(self) -> bool:
+        return self.pin_ciphertext is not None
 
 
 class PhonicsPattern(Base):
@@ -103,9 +111,7 @@ class VocabularyWordPattern(Base):
 class Story(Base):
     __tablename__ = "story"
     __table_args__ = (
-        CheckConstraint(
-            "status IN ('draft', 'validated', 'approved')", name="ck_story_status"
-        ),
+        CheckConstraint("status IN ('draft', 'validated', 'approved')", name="ck_story_status"),
         CheckConstraint("source IS NULL OR source IN ('llm', 'fallback')", name="ck_story_source"),
     )
 

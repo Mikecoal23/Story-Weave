@@ -80,6 +80,11 @@
   cursor: pointer;
 }
 
+.cp-card:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
 /* Cards cycle through colors like the entry screen */
 .cp-card:nth-child(3n + 2) {
   background: #c5b0f4;

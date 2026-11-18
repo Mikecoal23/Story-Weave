@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import AddChildForm from './AddChildForm'
-import { deleteChild } from '../api/children'
+import { deleteChild, getChildPin, setChildPin } from '../api/children'
 import type { Child, Dashboard } from '../api/types'
 
 type Props = {
@@ -9,14 +9,31 @@ type Props = {
   onChange: (child: Child) => void
   onAdded: (child: Child) => void
   onRemoved: (child: Child) => void
+  onChildrenChanged: () => void
   dashboard: Dashboard | null
   failed: boolean
   onRetry: () => void
 }
 
-function ParentHome({ child, childList, onChange, onAdded, onRemoved, dashboard, failed, onRetry }: Props) {
+function ParentHome({
+  child,
+  childList,
+  onChange,
+  onAdded,
+  onRemoved,
+  onChildrenChanged,
+  dashboard,
+  failed,
+  onRetry,
+}: Props) {
   const [adding, setAdding] = useState(false)
   const [removeFailed, setRemoveFailed] = useState(false)
+  const [revealedPin, setRevealedPin] = useState<{ childId: string; pin: string } | null>(null)
+  const [editingPin, setEditingPin] = useState(false)
+  const [pinEntry, setPinEntry] = useState('')
+  const [pinError, setPinError] = useState('')
+  const [pinConfiguredChildren, setPinConfiguredChildren] = useState<string[]>([])
+  const pinIsSet = Boolean(child && (child.pinSet || pinConfiguredChildren.includes(child.id)))
 
   async function handleRemove() {
     // Deleting can't be undone, so ask first
@@ -27,6 +44,40 @@ function ParentHome({ child, childList, onChange, onAdded, onRemoved, dashboard,
       onRemoved(child)
     } catch {
       setRemoveFailed(true)
+    }
+  }
+
+  async function handleShowPin() {
+    if (!child) return
+    if (revealedPin?.childId === child.id) {
+      setRevealedPin(null)
+      return
+    }
+    setPinError('')
+    try {
+      setRevealedPin({ childId: child.id, pin: await getChildPin(child.id) })
+    } catch {
+      setPinError("Couldn't retrieve this child's PIN. Try again.")
+    }
+  }
+
+  async function handleSavePin(e: React.FormEvent) {
+    e.preventDefault()
+    if (!child) return
+    if (!/^\d{4}$/.test(pinEntry)) {
+      setPinError('PIN must be exactly 4 digits')
+      return
+    }
+    setPinError('')
+    try {
+      await setChildPin(child.id, pinEntry)
+      setPinConfiguredChildren((configured) => [...new Set([...configured, child.id])])
+      setRevealedPin({ childId: child.id, pin: pinEntry })
+      setPinEntry('')
+      setEditingPin(false)
+      onChildrenChanged()
+    } catch {
+      setPinError("Couldn't save this child's PIN. Try again.")
     }
   }
 
@@ -52,6 +103,62 @@ function ParentHome({ child, childList, onChange, onAdded, onRemoved, dashboard,
           <button type="button" className="pd-add" onClick={handleRemove}>
             Remove child
           </button>
+          <div className="pd-card">
+            <h2 className="pd-heading">{child.name}'s PIN</h2>
+            {pinIsSet && (
+              <>
+                <button type="button" className="pd-chip" onClick={handleShowPin}>
+                  {revealedPin?.childId === child.id ? 'Hide PIN' : 'Show PIN'}
+                </button>
+                {revealedPin?.childId === child.id && (
+                  <p className="pd-stat" aria-live="polite">
+                    {revealedPin.pin}
+                  </p>
+                )}
+              </>
+            )}
+            {!editingPin ? (
+              <button
+                type="button"
+                className="pd-chip"
+                onClick={() => {
+                  setPinError('')
+                  setEditingPin(true)
+                }}
+              >
+                {pinIsSet ? 'Change PIN' : 'Set PIN'}
+              </button>
+            ) : (
+              <form className="pd-form" onSubmit={handleSavePin}>
+                <label>
+                  New 4-digit PIN
+                  <input
+                    className="pd-input"
+                    type="password"
+                    inputMode="numeric"
+                    pattern="[0-9]{4}"
+                    maxLength={4}
+                    required
+                    value={pinEntry}
+                    onChange={(e) => setPinEntry(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                  />
+                </label>
+                <div className="pd-form-buttons">
+                  <button type="submit">Save PIN</button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingPin(false)
+                      setPinEntry('')
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
+            {pinError && <p className="pd-hint" role="alert">{pinError}</p>}
+          </div>
           {removeFailed && <p className="pd-hint">Couldn't remove {child.name}. Try again.</p>}
         </>
       )}

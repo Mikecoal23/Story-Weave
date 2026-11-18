@@ -16,9 +16,16 @@ function ChildPicker({ childList, onSelect }: Props) {
       <h1 className="cp-title">Who is reading?</h1>
       <div className="cp-list">
         {childList.map((c) => (
-          <button key={c.id} className="cp-card" onClick={() => onSelect(c)}>
+          <button
+            key={c.id}
+            className="cp-card"
+            disabled={!c.pinSet}
+            onClick={() => onSelect(c)}
+          >
             <span className="cp-name">{c.name}</span>
-            <span className="cp-likes">Likes: {c.interests.join(', ')}</span>
+            <span className="cp-likes">
+              {c.pinSet ? `Likes: ${c.interests.join(', ')}` : 'Ask a grown-up to set a PIN'}
+            </span>
           </button>
         ))}
       </div>
