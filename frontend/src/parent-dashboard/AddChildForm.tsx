@@ -12,12 +12,17 @@ function AddChildForm({ onAdded, onCancel }: Props) {
   // Typed as a comma-separated string, split into a list on submit
   const [interests, setInterests] = useState('')
   const [grade, setGrade] = useState('1')
+  const [pin, setPin] = useState('')
   const [error, setError] = useState('')
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!name.trim()) {
       setError('Please enter a name')
+      return
+    }
+    if (!/^\d{4}$/.test(pin)) {
+      setError('PIN must be exactly 4 digits')
       return
     }
     try {
@@ -28,6 +33,7 @@ function AddChildForm({ onAdded, onCancel }: Props) {
           .map((i) => i.trim())
           .filter(Boolean),
         gradeLevel: Number(grade),
+        pin,
       })
       onAdded(child)
     } catch {
@@ -60,6 +66,19 @@ function AddChildForm({ onAdded, onCancel }: Props) {
           max={3}
           value={grade}
           onChange={(e) => setGrade(e.target.value)}
+        />
+      </label>
+      <label>
+        Child PIN (4 digits)
+        <input
+          className="pd-input"
+          type="password"
+          inputMode="numeric"
+          pattern="[0-9]{4}"
+          maxLength={4}
+          required
+          value={pin}
+          onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
         />
       </label>
       {error && <p className="pd-hint">{error}</p>}

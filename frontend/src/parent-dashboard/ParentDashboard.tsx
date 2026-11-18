@@ -71,6 +71,7 @@ function ParentDashboard({ childList, onChildrenChanged, onSwitchUser, onLogout 
             onChange={setChild}
             onAdded={handleAdded}
             onRemoved={handleRemoved}
+            onChildrenChanged={onChildrenChanged}
             dashboard={dashboard}
             failed={failed}
             onRetry={() => setAttempt(attempt + 1)}

@@ -3,7 +3,7 @@ import './PinScreen.css'
 
 type Props = {
   title: string
-  expectedPin: string
+  onSubmit: (pin: string) => Promise<boolean>
   onSuccess: () => void
   onBack: () => void
   kid?: boolean // bigger, friendlier style for the child PIN
@@ -11,25 +11,42 @@ type Props = {
 
 const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫']
 
-function PinScreen({ title, expectedPin, onSuccess, onBack, kid }: Props) {
+function PinScreen({ title, onSubmit, onSuccess, kid }: Props) {
   // Kept as a string so leading zeros survive ("0420")
   const [digits, setDigits] = useState('')
-  const [wrong, setWrong] = useState(false)
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
 
-  function press(key: string) {
+  async function press(key: string) {
     if (key === '⌫') {
       setDigits(digits.slice(0, -1))
       return
     }
+    if (busy) return
     const next = digits + key
     if (next.length < 4) {
       setDigits(next)
-      setWrong(false)
-    } else if (next === expectedPin) {
-      onSuccess()
+      setError('')
     } else {
-      setDigits('')
-      setWrong(true)
+      setBusy(true)
+      setError('')
+      try {
+        if (await onSubmit(next)) {
+          onSuccess()
+        } else {
+          setDigits('')
+          setError('Try again')
+        }
+      } catch (err) {
+        setDigits('')
+        setError(
+          String(err).includes('429')
+            ? 'Too many tries. Please wait 15 minutes.'
+            : "Couldn't check the PIN. Try again.",
+        )
+      } finally {
+        setBusy(false)
+      }
     }
   }
 
@@ -48,13 +65,19 @@ function PinScreen({ title, expectedPin, onSuccess, onBack, kid }: Props) {
             <span key={i} className={`pin-dot ${i < digits.length ? 'filled' : ''}`} />
           ))}
         </div>
-        <p className="pin-error">{wrong ? 'Try again' : ''}</p>
+        <p className="pin-error" role="alert">{error}</p>
         <div className="pin-keys">
           {keys.map((key, i) =>
             key === '' ? (
               <span key={i} />
             ) : (
-              <button key={i} type="button" className="pin-key" onClick={() => press(key)}>
+              <button
+                key={i}
+                type="button"
+                className="pin-key"
+                disabled={busy}
+                onClick={() => press(key)}
+              >
                 {key}
               </button>
             ),

@@ -41,12 +41,18 @@ function ChildPicker({ childList, onSelect, onBack }: Props) {
         {childList.map((c) => {
           const [emoji, theme] = lookFor(c.interests)
           return (
-            <button key={c.id} className={`cp-card cp-theme-${theme}`} onClick={() => onSelect(c)}>
-              {/* aria-hidden: decoration only, so screen readers skip it */}
-              <span className="cp-emoji" aria-hidden="true">{emoji}</span>
-              <span className="cp-name">{c.name}</span>
-              <span className="cp-likes">Likes: {c.interests.join(', ')}</span>
-            </button>
+          <button
+            key={c.id}
+            className={`cp-card cp-theme-${theme}`}
+            disabled={!c.pinSet}
+            onClick={() => onSelect(c)}
+          >
+            <span className="cp-emoji" aria-hidden="true">{emoji}</span>
+            <span className="cp-name">{c.name}</span>
+            <span className="cp-likes">
+              {c.pinSet ? `Likes: ${c.interests.join(', ')}` : 'Ask a grown-up to set a PIN'}
+            </span>
+          </button>
           )
         })}
       </div>

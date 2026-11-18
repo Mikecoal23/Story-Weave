@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     merriam_webster_api_key: str | None = None
     anthropic_api_key: str | None = None
     anthropic_story_model: str = "claude-haiku-4-5-20251001"
+    pin_encryption_key: str | None = None
     # Total LLM drafts per story (first try + retries) before the fallback template.
     story_max_attempts: int = 3
 

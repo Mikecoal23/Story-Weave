@@ -12,6 +12,7 @@ function LoginScreen({ onSuccess, loadError }: Props) {
   const [mode, setMode] = useState<'login' | 'signup'>('login')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [pin, setPin] = useState('')
   const [error, setError] = useState('')
   // Wiring check: can the frontend reach the backend's GET /health?
   const [backend, setBackend] = useState<'checking' | 'ok' | 'down'>('checking')
@@ -26,7 +27,13 @@ function LoginScreen({ onSuccess, loadError }: Props) {
     e.preventDefault()
     try {
       if (mode === 'login') await login(email)
-      else await createAccount(name, email)
+      else {
+        if (!/^\d{4}$/.test(pin)) {
+          setError('Parent PIN must be exactly 4 digits')
+          return
+        }
+        await createAccount(name, email, pin)
+      }
     } catch (err) {
       // request() errors start with the status code, e.g. "404 Not Found"
       const text = String(err)
@@ -42,6 +49,7 @@ function LoginScreen({ onSuccess, loadError }: Props) {
   function switchMode() {
     setMode(mode === 'login' ? 'signup' : 'login')
     setError('')
+    setPin('')
   }
 
   return (
@@ -64,6 +72,21 @@ function LoginScreen({ onSuccess, loadError }: Props) {
               maxLength={120}
               value={name}
               onChange={(e) => setName(e.target.value)}
+            />
+          </label>
+        )}
+        {mode === 'signup' && (
+          <label className="login-label">
+            Parent PIN (4 digits)
+            <input
+              className="login-input"
+              type="password"
+              inputMode="numeric"
+              pattern="[0-9]{4}"
+              maxLength={4}
+              required
+              value={pin}
+              onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
             />
           </label>
         )}

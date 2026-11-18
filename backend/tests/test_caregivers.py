@@ -5,20 +5,24 @@ from uuid import uuid4
 from fastapi.testclient import TestClient
 from sqlalchemy.exc import IntegrityError
 
+from app.api.auth import get_current_caregiver
 from app.db.session import get_db
 from app.main import app
 from app.models import Caregiver, CaregiverSession
 
 
-def _call(db: Mock, method: str, path: str, **kwargs):
+def _call(db: Mock, method: str, path: str, *, current: Caregiver | None = None, **kwargs):
     def override_db():
         yield db
 
     app.dependency_overrides[get_db] = override_db
+    if current is not None:
+        app.dependency_overrides[get_current_caregiver] = lambda: current
     try:
         return getattr(TestClient(app), method)(path, **kwargs)
     finally:
         app.dependency_overrides.pop(get_db, None)
+        app.dependency_overrides.pop(get_current_caregiver, None)
 
 
 def _added_session(db: Mock) -> CaregiverSession:
@@ -33,13 +37,18 @@ def test_create_caregiver_returns_token_and_stores_only_its_hash() -> None:
     db.flush.side_effect = lambda: setattr(db.add.call_args_list[0].args[0], "id", caregiver_id)
 
     response = _call(
-        db, "post", "/caregivers", json={"display_name": "Sam", "email": " Sam@Example.com "}
+        db,
+        "post",
+        "/caregivers",
+        json={"display_name": "Sam", "email": " Sam@Example.com ", "pin": "1234"},
     )
 
     assert response.status_code == 201
     body = response.json()
     assert body["caregiver_id"] == str(caregiver_id)
     assert body["display_name"] == "Sam"
+    assert body["pin_set"] is True
+    assert db.add.call_args_list[0].args[0].pin_hash != "1234"
     assert db.add.call_args_list[0].args[0].email == "sam@example.com"
     session = _added_session(db)
     assert session.caregiver_id == caregiver_id
@@ -53,7 +62,10 @@ def test_create_caregiver_returns_409_for_taken_email() -> None:
     db.scalar.return_value = Caregiver(id=uuid4(), display_name="Sam", email="sam@example.com")
 
     response = _call(
-        db, "post", "/caregivers", json={"display_name": "Sam", "email": "sam@example.com"}
+        db,
+        "post",
+        "/caregivers",
+        json={"display_name": "Sam", "email": "sam@example.com", "pin": "1234"},
     )
 
     assert response.status_code == 409
@@ -66,7 +78,10 @@ def test_create_caregiver_returns_409_when_a_sign_up_races_on_the_email() -> Non
     db.flush.side_effect = IntegrityError("INSERT", {}, Exception("duplicate email"))
 
     response = _call(
-        db, "post", "/caregivers", json={"display_name": "Sam", "email": "sam@example.com"}
+        db,
+        "post",
+        "/caregivers",
+        json={"display_name": "Sam", "email": "sam@example.com", "pin": "1234"},
     )
 
     assert response.status_code == 409
@@ -84,6 +99,7 @@ def test_login_finds_caregiver_and_mints_a_new_token_each_time() -> None:
 
     assert first.status_code == 200
     assert first.json()["caregiver_id"] == str(caregiver.id)
+    assert first.json()["pin_set"] is False
     assert first.json()["token"] != second.json()["token"]
     assert db.commit.call_count == 2
 

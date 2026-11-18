@@ -3,6 +3,7 @@
 from collections.abc import Generator
 
 import pytest
+from cryptography.fernet import Fernet
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 from support import throwaway_schema
@@ -42,7 +43,8 @@ TABLES = [
 
 
 @pytest.fixture
-def db() -> Generator[Session, None, None]:
+def db(monkeypatch) -> Generator[Session, None, None]:
+    monkeypatch.setattr(settings, "pin_encryption_key", Fernet.generate_key().decode())
     with throwaway_schema(
         "dev_fixtures_test", TABLES, not_tested="scripts.dev_fixtures"
     ) as session:
