@@ -5,12 +5,13 @@ type Props = {
   title: string
   expectedPin: string
   onSuccess: () => void
+  onBack: () => void
   kid?: boolean // bigger, friendlier style for the child PIN
 }
 
 const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫']
 
-function PinScreen({ title, expectedPin, onSuccess, kid }: Props) {
+function PinScreen({ title, expectedPin, onSuccess, onBack, kid }: Props) {
   // Kept as a string so leading zeros survive ("0420")
   const [digits, setDigits] = useState('')
   const [wrong, setWrong] = useState(false)
@@ -37,6 +38,9 @@ function PinScreen({ title, expectedPin, onSuccess, kid }: Props) {
       <span className="pin-shape pin-shape-mint" />
       <span className="pin-shape pin-shape-pink" />
       <span className="pin-shape pin-shape-peach" />
+      <button type="button" className="pin-back" onClick={onBack}>
+        ← Back
+      </button>
       <div className="pin-card">
         <h1 className="pin-title">{title}</h1>
         <div className="pin-dots">

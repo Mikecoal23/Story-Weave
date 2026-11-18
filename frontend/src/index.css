@@ -7,3 +7,35 @@
 body {
   margin: 0;
 }
+
+/* Black ring for keyboard users. :focus-visible skips mouse clicks, so it only shows when tabbing.
+   The offset leaves a white gap so the ring stays visible around black buttons too. */
+button:focus-visible,
+select:focus-visible {
+  outline: 3px solid #000;
+  outline-offset: 3px;
+}
+
+/* Buttons with an offset shadow: an outline can't go around the shadow, so the ring is drawn with ::after.
+   Each of these buttons sets --shadow to its shadow size, and the ring reaches that much further right and down.
+   6px = the same 3px gap + 3px ring as the outline above. */
+.entry-btn:focus-visible,
+.cp-card:focus-visible,
+.cp-back:focus-visible,
+.pin-back:focus-visible {
+  outline: none;
+}
+
+.entry-btn:focus-visible::after,
+.cp-card:focus-visible::after,
+.cp-back:focus-visible::after,
+.pin-back:focus-visible::after {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  right: calc(-6px - var(--shadow));
+  bottom: calc(-6px - var(--shadow));
+  border: 3px solid #000;
+  border-radius: inherit;
+}

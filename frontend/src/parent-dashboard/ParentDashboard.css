@@ -219,9 +219,14 @@
   gap: 1.5rem;
 }
 
+.pd-switch,
 .pd-logout {
-  margin-top: auto;
   border-color: var(--pd-hairline);
+}
+
+/* Pushes Switch user and Log out to the bottom of the sidebar */
+.pd-switch {
+  margin-top: auto;
 }
 
 .pd-select {

@@ -5,6 +5,7 @@ import { useRecorder } from './useRecorder'
 
 type Props = {
   sessionId: string | null
+  sessionFailed: boolean // true if the session couldn't start (null sessionId alone could just mean "still starting")
   lineNumber: number // 1-based, as the backend expects
   line: string
   tried: boolean // true once this line has been scored; "Hear it" waits for it so scores stay honest
@@ -12,7 +13,7 @@ type Props = {
   onNext: () => void
 }
 
-function Controls({ sessionId, lineNumber, line, tried, onScored, onNext }: Props) {
+function Controls({ sessionId, sessionFailed, lineNumber, line, tried, onScored, onNext }: Props) {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
 
@@ -31,6 +32,16 @@ function Controls({ sessionId, lineNumber, line, tried, onScored, onNext }: Prop
   }
 
   const { recording, micBlocked, supported, start, stop } = useRecorder(handleAudio)
+
+  // Normally "Next line" waits for the child to read the line. If reading isn't possible
+  // (session failed, unsupported browser, blocked mic, failed upload) it unlocks so the child isn't stuck.
+  const cantRead = sessionFailed || !supported || micBlocked || error !== ''
+
+  // A failed upload only unlocks the line it happened on
+  function handleNext() {
+    setError('')
+    onNext()
+  }
 
   function handleMic() {
     if (recording) stop()
@@ -58,7 +69,7 @@ function Controls({ sessionId, lineNumber, line, tried, onScored, onNext }: Prop
         <button className="btn btn-outline" onClick={hearLine} disabled={!tried || recording || uploading}>
           Hear it
         </button>
-        <button className="btn btn-green" onClick={onNext} disabled={recording || uploading}>
+        <button className="btn btn-green" onClick={handleNext} disabled={(!tried && !cantRead) || recording || uploading}>
           Next line
         </button>
       </footer>

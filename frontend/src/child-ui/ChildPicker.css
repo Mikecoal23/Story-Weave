@@ -47,9 +47,34 @@
 }
 
 .cp-title,
+.cp-empty,
 .cp-list {
   position: relative;
   z-index: 1;
+}
+
+/* White secondary pill, pinned to the top-left corner above the circles */
+.cp-back {
+  --shadow: 6px; /* also sizes the focus ring in index.css */
+  position: absolute;
+  z-index: 1;
+  top: 1.5rem;
+  left: 1.5rem;
+  padding: 0.6rem 1.25rem;
+  font: inherit;
+  font-weight: 540; /* same weight as the names on the cards */
+  color: #000;
+  background: #c5b0f4; /* lilac, stands out against the mint circle behind it */
+  border: none;
+  border-radius: 50px;
+  box-shadow: var(--shadow) var(--shadow) 0 #000; /* hard offset like the cards, smaller to suit the small button */
+  cursor: pointer;
+}
+
+.cp-empty {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 330;
 }
 
 .cp-title {
@@ -68,6 +93,8 @@
 }
 
 .cp-card {
+  --shadow: 10px; /* also sizes the focus ring in index.css */
+  position: relative; /* the focus ring is placed relative to the card */
   width: 17rem; /* same width for every child */
   padding: 2rem;
   font: inherit;
@@ -76,7 +103,7 @@
   background: #dceeb1;
   border: none;
   border-radius: 24px;
-  box-shadow: 10px 10px 0 #000; /* hard offset, no blur, same as login and entry */
+  box-shadow: var(--shadow) var(--shadow) 0 #000; /* hard offset, no blur, same as login and entry */
   cursor: pointer;
 }
 
@@ -87,6 +114,21 @@
 
 .cp-card:nth-child(3n) {
   background: #c8e6cd;
+}
+
+/* Card color from the child's interests (ChildPicker.tsx), same pastels as the reader themes.
+   .cp-card. in front makes these beat the nth-child colors above; cp-theme-default keeps the cycle. */
+.cp-card.cp-theme-ocean { background: #d6eefc; }
+.cp-card.cp-theme-space { background: #f2c6d8; }
+.cp-card.cp-theme-nature { background: #b9dc9c; }
+.cp-card.cp-theme-magic { background: #ead7f5; }
+.cp-card.cp-theme-cozy { background: #efc9b8; }
+
+.cp-emoji {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 2.5rem;
+  line-height: 1;
 }
 
 .cp-name {

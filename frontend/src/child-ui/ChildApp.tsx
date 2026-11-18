@@ -81,6 +81,7 @@ function ChildApp({ child, onSwitchReader }: Props) {
       {sessionError && <p>We couldn't start your reading session. Try again.</p>}
       <Controls
         sessionId={sessionId}
+        sessionFailed={sessionError}
         lineNumber={lineIndex + 1}
         line={story?.lines[lineIndex] ?? ''}
         tried={scores !== null}

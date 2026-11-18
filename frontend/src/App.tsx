@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import LoginScreen from './login/LoginScreen'
 import EntryScreen from './entry/EntryScreen'
 import PinScreen from './pin/PinScreen'
 import ChildPicker from './child-ui/ChildPicker'
 import type { Child } from './api/types'
 import { getChildren } from './api/children'
-import { logout } from './api/caregivers'
+import { getCaregiverId, logout } from './api/caregivers'
 import ChildApp from './child-ui/ChildApp'
 import ParentDashboard from './parent-dashboard/ParentDashboard'
 
@@ -22,6 +22,17 @@ function App() {
   const [child, setChild] = useState<Child | null>(null)
   // Shown on the login screen when the children can't be loaded (e.g. backend not running)
   const [loadError, setLoadError] = useState('')
+
+  // After a page refresh: if a caregiver is still saved, skip the login screen
+  useEffect(() => {
+    if (!getCaregiverId()) return
+    getChildren()
+      .then((list) => {
+        setChildList(list)
+        setScreen('entry')
+      })
+      .catch(() => setLoadError("Couldn't load your children. Is the backend running?"))
+  }, [])
 
   async function loadChildren() {
     setChildList(await getChildren())
@@ -48,8 +59,23 @@ function App() {
 
   if (screen === 'login') return <LoginScreen onSuccess={handleLogin} loadError={loadError} />
   if (screen === 'parentPin')
-    return <PinScreen title="Enter parent PIN" expectedPin={PARENT_PIN} onSuccess={() => setScreen('parent')} />
-  if (screen === 'parent') return <ParentDashboard childList={childList} onChildrenChanged={loadChildren} onLogout={handleLogout} />
+    return (
+      <PinScreen
+        title="Enter parent PIN"
+        expectedPin={PARENT_PIN}
+        onSuccess={() => setScreen('parent')}
+        onBack={() => setScreen('entry')}
+      />
+    )
+  if (screen === 'parent')
+    return (
+      <ParentDashboard
+        childList={childList}
+        onChildrenChanged={loadChildren}
+        onSwitchUser={() => setScreen('entry')}
+        onLogout={handleLogout}
+      />
+    )
   if (screen === 'childPicker')
     return (
       <ChildPicker
@@ -58,10 +84,19 @@ function App() {
           setChild(c)
           setScreen('childPin')
         }}
+        onBack={() => setScreen('entry')}
       />
     )
   if (screen === 'childPin' && child)
-    return <PinScreen kid title={`Hi ${child.name}! Enter your PIN`} expectedPin={child.pin} onSuccess={() => setScreen('child')} />
+    return (
+      <PinScreen
+        kid
+        title={`Hi ${child.name}! Enter your PIN`}
+        expectedPin={child.pin}
+        onSuccess={() => setScreen('child')}
+        onBack={() => setScreen('childPicker')}
+      />
+    )
   if (screen === 'child' && child)
     return <ChildApp child={child} onSwitchReader={() => setScreen('childPicker')} />
 

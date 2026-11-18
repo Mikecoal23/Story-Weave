@@ -1,7 +1,13 @@
 import { request } from './client'
 
-// The logged-in caregiver's id, set by login(). Lives only in memory, so a page refresh logs out.
-let caregiverId = ''
+// The logged-in caregiver's id, set by login(). Also saved in localStorage so a page refresh keeps you logged in.
+const STORAGE_KEY = 'caregiverId'
+let caregiverId = localStorage.getItem(STORAGE_KEY) ?? ''
+
+function setCaregiverId(id: string) {
+  caregiverId = id
+  localStorage.setItem(STORAGE_KEY, id)
+}
 
 export function getCaregiverId() {
   return caregiverId
@@ -9,6 +15,7 @@ export function getCaregiverId() {
 
 export function logout() {
   caregiverId = ''
+  localStorage.removeItem(STORAGE_KEY)
 }
 
 // No password: the backend finds the caregiver by email (planning.md, Open Question 12)
@@ -17,7 +24,7 @@ export async function login(email: string) {
     method: 'POST',
     body: JSON.stringify({ email }),
   })
-  caregiverId = session.caregiver_id
+  setCaregiverId(session.caregiver_id)
 }
 
 // Creates the caregiver and logs them in; the backend returns a session either way
@@ -26,5 +33,5 @@ export async function createAccount(name: string, email: string) {
     method: 'POST',
     body: JSON.stringify({ display_name: name, email }),
   })
-  caregiverId = session.caregiver_id
+  setCaregiverId(session.caregiver_id)
 }

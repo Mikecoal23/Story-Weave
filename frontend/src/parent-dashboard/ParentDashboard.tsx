@@ -12,10 +12,11 @@ import type { Child, Dashboard } from '../api/types'
 type Props = {
   childList: Child[]
   onChildrenChanged: () => void // reloads the list in App after a child is added or removed
+  onSwitchUser: () => void
   onLogout: () => void
 }
 
-function ParentDashboard({ childList, onChildrenChanged, onLogout }: Props) {
+function ParentDashboard({ childList, onChildrenChanged, onSwitchUser, onLogout }: Props) {
   const [tab, setTab] = useState<Tab>('Home')
   // Defaults to the first child; the dropdown on Home switches it
   // Undefined when the caregiver has no children yet
@@ -61,7 +62,7 @@ function ParentDashboard({ childList, onChildrenChanged, onLogout }: Props) {
 
   return (
     <div className="pd-layout">
-      <Sidebar active={tab} onSelect={setTab} onLogout={onLogout} />
+      <Sidebar active={tab} onSelect={setTab} onSwitchUser={onSwitchUser} onLogout={onLogout} />
       <main className="pd-main">
         {tab === 'Home' && (
           <ParentHome

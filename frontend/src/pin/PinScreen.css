@@ -44,6 +44,24 @@
   background: #f3c9b6;
 }
 
+/* Same back button as the child picker: lilac pill in the top-left corner */
+.pin-back {
+  --shadow: 6px; /* also sizes the focus ring in index.css */
+  position: absolute;
+  z-index: 1;
+  top: 1.5rem;
+  left: 1.5rem;
+  padding: 0.6rem 1.25rem;
+  font: inherit;
+  font-weight: 540;
+  color: #000;
+  background: #c5b0f4;
+  border: none;
+  border-radius: 50px;
+  box-shadow: var(--shadow) var(--shadow) 0 #000;
+  cursor: pointer;
+}
+
 .pin-card {
   position: relative;
   z-index: 1;

@@ -313,10 +313,6 @@ The sprint opened with a capacity warning: it held Sprint 2's displaced work, it
   - [x] Whether to keep the mock code now that every `USE_MOCKS` flag is false. _(2026-11-13: removed, including `api/mockChildren.ts`.)_
 - [x] Remove a child from the parent dashboard: `DELETE /children/{id}` and a "Remove child" button on Home, with a confirmation. _(2026-11-13; see that entry.)_
 - [x] A story character and a matching background scene on the reader, planned in `frontend/character-plan.md`. _(2026-11-13; see that entry.)_
-- [ ] Optional, her call: the dashboard's `strongest` can use `is_mastered()` from `difficulty.py`, so it follows the same mastery rule as the engine (see 2026-11-05). **2026-11-09 review: recommended, not optional.** At 4 right out of 5 the same pattern shows as both "strongest" and "working on".
-- [ ] Stop the recording when the reader closes (2026-11-09 review): if a child taps ✕ while recording, the mic stays on, because `useRecorder.ts` has no cleanup on unmount.
-- [ ] Delete `backend/scripts/seed_dev_data.py`, which nothing uses now that `dev_fixtures.py` exists, with a Decisions Log entry (reverses 2026-10-23 "two dev-data scripts stay").
-- [ ] Small cleanup (2026-11-09 review): the unused `frontend/src/assets/*`, the "Hear it" button that only logs, stale comments in `api/client.ts` and `api/types.ts`, whether to keep the mock code now that every `USE_MOCKS` flag is false, and a 409 instead of a 500 when two sign-ups race on one email.
 - [ ] Decide whether `GET /stories/{id}` should return the story's `source`. It is stored since 2026-11-13; old rows are NULL, which must read as "unknown".
 
 #### All three — week 1
