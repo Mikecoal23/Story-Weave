@@ -25,10 +25,17 @@ from app.models import (
 from app.schemas.scoring import ScoreResult, WordScore
 
 
+class AudioAssessmentNotConfiguredError(RuntimeError):
+    """Raised when a required audio-assessment dependency is unavailable."""
+
+
 def score_line_audio(audio_bytes: bytes, expected_line: str) -> ScoreResult:
     """Assess a browser recording against its expected line with Azure Speech."""
     if not settings.azure_speech_key or not settings.azure_speech_region:
-        raise RuntimeError("Set AZURE_SPEECH_KEY and AZURE_SPEECH_REGION in backend/.env")
+        raise AudioAssessmentNotConfiguredError(
+            "Audio assessment is not configured: set AZURE_SPEECH_KEY and "
+            "AZURE_SPEECH_REGION in backend/.env"
+        )
     if not audio_bytes:
         raise ValueError("Audio upload is empty")
     if not expected_line.strip():
@@ -88,7 +95,9 @@ def score_line_audio(audio_bytes: bytes, expected_line: str) -> ScoreResult:
 def _convert_to_wav(audio_bytes: bytes) -> bytes:
     ffmpeg = shutil.which("ffmpeg")
     if ffmpeg is None:
-        raise RuntimeError("FFmpeg is required to convert uploaded audio for Azure Speech")
+        raise AudioAssessmentNotConfiguredError(
+            "Audio assessment is not configured: FFmpeg is required to convert uploaded audio"
+        )
 
     # FFmpeg writes the WAV to a file, not to a pipe: a pipe can't be seeked, so the header
     # would claim an unknown (2**31 - 1 frame) length and the duration check would reject

@@ -14,8 +14,20 @@ _REQUEST_TIMEOUT_SECONDS = 15.0
 
 # Must match the names in the frontend's characterEmoji map (child-ui/ChildApp.tsx).
 CHARACTERS = (
-    "fish", "frog", "dragon", "rocket", "dinosaur", "cat", "dog",
-    "unicorn", "robot", "bear", "bird", "bug", "ship", "default",
+    "fish",
+    "frog",
+    "dragon",
+    "rocket",
+    "dinosaur",
+    "cat",
+    "dog",
+    "unicorn",
+    "robot",
+    "bear",
+    "bird",
+    "bug",
+    "ship",
+    "default",
 )
 
 
@@ -23,7 +35,8 @@ class LLMNotConfiguredError(RuntimeError):
     """ANTHROPIC_API_KEY is not set, so no draft can be requested."""
 
 
-_SYSTEM_PROMPT = """You write short decodable stories for children in grades 1-3 learning to read.
+_SYSTEM_PROMPT = (
+    """You write short decodable stories for children in grades 1-3 learning to read.
 
 Rules:
 - Use ONLY words from the allowed vocabulary list. Never use a word that is not in that list.
@@ -36,11 +49,14 @@ Rules:
   word that is not in it.
 - The story must be 6-8 lines, one short sentence per line.
 - Work in as many of the target phonics patterns as you naturally can.
-- Pick the "character" that best fits the story from this list: """ + ", ".join(CHARACTERS) + """.
+- Pick the "character" that best fits the story from this list: """
+    + ", ".join(CHARACTERS)
+    + """.
   If none fit, use "default".
 - Respond with ONLY a JSON object, no other text, shaped exactly like:
   {"title": "...", "theme": "...", "character": "...", "lines": ["...", "...", ...]}
 """
+)
 
 
 def _build_user_prompt(
@@ -112,19 +128,19 @@ def generate_story_draft(
     if not isinstance(raw_text, str):
         raise ValueError("The reply has no text block")
     data = json.loads(_extract_json_object(raw_text))
-    # A missing or unknown character isn't worth a retry; just show the default.
-    character = data.get("character")
-    if character not in CHARACTERS:
-        character = "default"
     if not isinstance(data, dict):
         raise ValueError("The reply is not a JSON object")
     lines = data["lines"]
     if not isinstance(lines, list) or not all(isinstance(line, str) for line in lines):
         raise ValueError("The reply's lines are not a list of strings")
+    # A missing or unknown character isn't worth a retry; just show the default.
+    character = data.get("character")
+    if character not in CHARACTERS:
+        character = "default"
     return DraftStory(
         title=data["title"],
         theme=data["theme"],
         pattern_codes=tuple(pattern.code for pattern in patterns),
-        lines=tuple(data["lines"]),
+        lines=tuple(lines),
         character=character,
     )
