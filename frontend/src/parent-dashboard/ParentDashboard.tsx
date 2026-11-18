@@ -76,17 +76,22 @@ function ParentDashboard({ childList, onChildrenChanged, onSwitchUser, onLogout 
             onRetry={() => setAttempt(attempt + 1)}
           />
         )}
-        {tab === 'Progress' &&
+        {/* Progress and Practice both use the dashboard, so they share the loading and error states */}
+        {(tab === 'Progress' || tab === 'Practice') &&
           (!child ? (
             <p className="pd-hint">Add a child on the Home tab first.</p>
           ) : dashboard ? (
-            <>
-              <WeekSummary childName={child.name} dashboard={dashboard} />
-              <div className="pd-grid">
-                <PatternsInProgress patterns={dashboard.patterns} />
-                <TryAtHome words={dashboard.try_at_home} />
-              </div>
-            </>
+            tab === 'Progress' ? (
+              <>
+                <WeekSummary childName={child.name} dashboard={dashboard} />
+                <div className="pd-grid">
+                  <PatternsInProgress patterns={dashboard.patterns} />
+                  <TryAtHome words={dashboard.try_at_home} />
+                </div>
+              </>
+            ) : (
+              <PracticeTab dashboard={dashboard} />
+            )
           ) : failed ? (
             <>
               <p className="pd-hint">Couldn't load the dashboard</p>
@@ -97,7 +102,6 @@ function ParentDashboard({ childList, onChildrenChanged, onSwitchUser, onLogout 
           ) : (
             <p className="pd-hint">Loading…</p>
           ))}
-        {tab === 'Practice' && <PracticeTab />}
       </main>
     </div>
   )

@@ -240,9 +240,24 @@
   border-radius: 50px;
 }
 
-/* Word chips are labels; only the "Mark as practiced" button is clickable */
+/* Word chips in Try at home are labels, not buttons */
 span.pd-chip {
   cursor: default;
+}
+
+/* The Practice word that is being looked up */
+.pd-chip[aria-pressed='true'] {
+  color: #fff;
+  background: var(--pd-ink);
+  border-color: var(--pd-ink);
+}
+
+/* White box under the Practice word chips with the dictionary result */
+.pd-definition {
+  margin-top: 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: 16px;
+  background: var(--pd-canvas);
 }
 
 .pd-chips {
