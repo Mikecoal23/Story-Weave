@@ -6,6 +6,7 @@ function TryAtHome({ words }: Props) {
   return (
     <section className="pd-card">
       <h2 className="pd-heading">Try at home</h2>
+      {words.length === 0 && <p className="pd-hint">Words show up after the first story.</p>}
       <div className="pd-chips">
         {words.map((word) => (
           <span key={word} className="pd-chip">

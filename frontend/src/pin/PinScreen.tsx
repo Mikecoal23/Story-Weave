@@ -6,12 +6,13 @@ type Props = {
   onSubmit: (pin: string) => Promise<boolean>
   onSuccess: () => void
   onBack: () => void
+  onForgot?: () => void // only the parent PIN passes this, which shows "Forgot PIN?"
   kid?: boolean // bigger, friendlier style for the child PIN
 }
 
 const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫']
 
-function PinScreen({ title, onSubmit, onSuccess, kid }: Props) {
+function PinScreen({ title, onSubmit, onSuccess, onBack, onForgot, kid }: Props) {
   // Kept as a string so leading zeros survive ("0420")
   const [digits, setDigits] = useState('')
   const [error, setError] = useState('')
@@ -83,6 +84,11 @@ function PinScreen({ title, onSubmit, onSuccess, kid }: Props) {
             ),
           )}
         </div>
+        {onForgot && (
+          <button type="button" className="pin-forgot" onClick={onForgot}>
+            Forgot PIN?
+          </button>
+        )}
       </div>
     </main>
   )

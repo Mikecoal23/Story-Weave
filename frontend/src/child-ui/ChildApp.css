@@ -253,7 +253,8 @@
   align-items: center;
   justify-content: center;
   gap: 1.5rem;
-  padding: 0 1.5rem;
+  /* bottom padding keeps the definition bubble from touching the "Click to speak" button */
+  padding: 0 1.5rem 2rem;
 }
 
 .prompt {
@@ -267,13 +268,16 @@
   max-width: 14em;
   font-size: clamp(2rem, 6vw, 4rem);
   font-weight: 340;
-  line-height: 1.3;
+  /* Taller lines than the word highlights (1.25 below), so a sentence that wraps
+     leaves a gap between rows and the highlights and outline don't overlap */
+  line-height: 1.75;
   text-align: center;
 }
 
 .word {
   padding: 0 0.1em;
   font: inherit;
+  line-height: 1.25;
   color: inherit;
   border: 0;
   border-radius: 0.15em;
@@ -295,8 +299,11 @@
   background: #f3c9b6;
 }
 
+/* At least 30rem wide, and wider when a long word and pronunciation need it (up to the screen width) */
 .word-definition {
-  width: min(100%, 30rem);
+  width: fit-content;
+  min-width: min(100%, 30rem);
+  max-width: 100%;
   box-sizing: border-box;
   padding: 1rem 1.25rem;
   background: #fff;
@@ -317,6 +324,13 @@
 .definition-text,
 .word-definition p {
   margin: 0;
+}
+
+/* width 0 + min-width 100%: the text wraps to the bubble's width instead of stretching it,
+   so only the heading row decides how wide the bubble gets */
+.word-definition p {
+  width: 0;
+  min-width: 100%;
 }
 
 .phonetic {
@@ -367,7 +381,7 @@
   border-top: 2px solid #e5e5e5;
 }
 
-/* Pill buttons: white secondary ("Hear it") and lime for "Next line" */
+/* Pill buttons: white secondary ("Hear the Sentence") and lime for "Next line" */
 .btn {
   padding: 0.8rem 2rem;
   font: inherit;
@@ -379,10 +393,19 @@
   cursor: pointer;
 }
 
+/* Same look as the definition box: white with a lime border and a soft shadow */
 .btn-outline {
   background: #fff;
+  border: 2px solid #dceeb1;
+  box-shadow: 0 0.25rem 1rem rgb(0 0 0 / 10%);
 }
 
 .btn-green {
   background: #dceeb1;
+}
+
+/* Same as the child picker's locked cards: see-through with a "can't click" cursor */
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
 }

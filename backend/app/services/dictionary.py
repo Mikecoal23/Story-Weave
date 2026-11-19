@@ -11,6 +11,14 @@ from app.schemas.dictionary import DictionaryEntry
 WORD_PATTERN = re.compile(r"^[A-Za-z]+(?:['’-][A-Za-z]+)*$")
 API_URL = "https://www.dictionaryapi.com/api/v3/references/sd2/json"
 AUDIO_BASE_URL = "https://media.merriam-webster.com/audio/prons/en/us/mp3"
+# Merriam-Webster marks up text with tokens like {it}...{/it}. In a pronunciation the italic
+# part is a usage note ("especially before consonant sounds"), so it is dropped with its text.
+ITALIC_NOTE = re.compile(r"\{it\}.*?\{/it\}")
+MARKUP_TOKEN = re.compile(r"\{[^}]*\}")
+
+
+def _clean_pronunciation(text: str) -> str:
+    return MARKUP_TOKEN.sub("", ITALIC_NOTE.sub("", text)).strip()
 
 
 def _audio_url(audio: str) -> str:
@@ -70,7 +78,7 @@ def get_dictionary_entry(word: str) -> DictionaryEntry:
                             continue
                         mw_spelling = pronunciation.get("mw")
                         if phonetic is None and isinstance(mw_spelling, str):
-                            phonetic = mw_spelling
+                            phonetic = _clean_pronunciation(mw_spelling) or None
                         sound = pronunciation.get("sound")
                         if audio_url is None and isinstance(sound, dict):
                             audio = sound.get("audio")

@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react'
 import LoginScreen from './login/LoginScreen'
 import EntryScreen from './entry/EntryScreen'
 import PinScreen from './pin/PinScreen'
+import ForgotPin from './pin/ForgotPin'
 import ChildPicker from './child-ui/ChildPicker'
 import type { Child } from './api/types'
 import { getChildren, verifyChildPin } from './api/children'
 import {
+  getCaregiverId,
   hasCaregiverPin,
   logout,
   setCaregiverPin,
@@ -14,7 +16,7 @@ import {
 import ChildApp from './child-ui/ChildApp'
 import ParentDashboard from './parent-dashboard/ParentDashboard'
 
-type Screen = 'login' | 'entry' | 'parentPin' | 'parent' | 'childPicker' | 'childPin' | 'child'
+type Screen = 'login' | 'entry' | 'parentPin' | 'forgotPin' | 'parent' | 'childPicker' | 'childPin' | 'child'
 
 function App() {
   const [screen, setScreen] = useState<Screen>('login')
@@ -32,6 +34,7 @@ function App() {
     getChildren()
       .then((list) => {
         setChildList(list)
+        setParentPinSet(hasCaregiverPin())
         setScreen('entry')
       })
       .catch(() => setLoadError("Couldn't load your children. Is the backend running?"))
@@ -66,11 +69,33 @@ function App() {
   if (screen === 'parentPin')
     return (
       <PinScreen
-<<<<<<< HEAD
-        title="Enter parent PIN"
-        expectedPin={PARENT_PIN}
+        title={parentPinSet ? 'Enter parent PIN' : 'Set parent PIN'}
+        onSubmit={async (pin) => {
+          if (!parentPinSet) {
+            await setCaregiverPin(pin)
+            setParentPinSet(true)
+            return true
+          }
+          return verifyCaregiverPin(pin)
+        }}
         onSuccess={() => setScreen('parent')}
-        onBack={() => setScreen('entry')}
+        onBack={() => {
+          // Undo a "Forgot PIN?" reset that was started but not finished
+          setParentPinSet(hasCaregiverPin())
+          setScreen('entry')
+        }}
+        onForgot={parentPinSet ? () => setScreen('forgotPin') : undefined}
+      />
+    )
+  if (screen === 'forgotPin')
+    return (
+      <ForgotPin
+        // Treating the PIN as not set makes the PIN screen show "Set parent PIN" and save the new one
+        onVerified={() => {
+          setParentPinSet(false)
+          setScreen('parentPin')
+        }}
+        onBack={() => setScreen('parentPin')}
       />
     )
   if (screen === 'parent')
@@ -82,21 +107,6 @@ function App() {
         onLogout={handleLogout}
       />
     )
-=======
-        title={parentPinSet ? 'Enter parent PIN' : 'Set parent PIN'}
-        onSubmit={async (pin) => {
-          if (!parentPinSet) {
-            await setCaregiverPin(pin)
-            setParentPinSet(true)
-            return true
-          }
-          return verifyCaregiverPin(pin)
-        }}
-        onSuccess={() => setScreen('parent')}
-      />
-    )
-  if (screen === 'parent') return <ParentDashboard childList={childList} onChildrenChanged={loadChildren} onLogout={handleLogout} />
->>>>>>> 31f1c4a42ddedbacff75b20e9ff34c3c28d835d7
   if (screen === 'childPicker')
     return (
       <ChildPicker
@@ -113,14 +123,9 @@ function App() {
       <PinScreen
         kid
         title={`Hi ${child.name}! Enter your PIN`}
-<<<<<<< HEAD
-        expectedPin={child.pin}
-        onSuccess={() => setScreen('child')}
-        onBack={() => setScreen('childPicker')}
-=======
         onSubmit={(pin) => verifyChildPin(child.id, pin)}
         onSuccess={() => setScreen('child')}
->>>>>>> 31f1c4a42ddedbacff75b20e9ff34c3c28d835d7
+        onBack={() => setScreen('childPicker')}
       />
     )
   if (screen === 'child' && child)

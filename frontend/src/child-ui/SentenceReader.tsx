@@ -43,13 +43,9 @@ function SentenceReader({ line, scores }: Props) {
     }
   }, [])
 
+  // New scores (or a new line) close any open definition; it only opens when a word is clicked
   useEffect(() => {
-    const firstUnmastered = scores?.find((score) => score.status !== 'mastered')
     const timer = window.setTimeout(() => {
-      if (firstUnmastered) {
-        void showWord(firstUnmastered.expected_word)
-        return
-      }
       latestLookup.current += 1
       setSelectedWord(null)
       setEntry(null)
@@ -60,9 +56,26 @@ function SentenceReader({ line, scores }: Props) {
       window.clearTimeout(timer)
       latestLookup.current += 1
     }
-  }, [scores, showWord])
+  }, [scores])
 
   const selectedScore = scores?.find((score) => score.expected_word === selectedWord)
+  // The clicked word without punctuation ("went." -> "went")
+  const shownWord = selectedWord?.replace(/^[^A-Za-z]+|[^A-Za-z]+$/g, '') ?? ''
+  // The dictionary files some words under another one ("went" is under "go"). Then its
+  // pronunciation and audio are for that other word, so they aren't used.
+  const otherForm = entry && entry.word.toLowerCase() !== shownWord.toLowerCase() ? entry.word : null
+
+  function hearWord() {
+    if (entry?.audio_url && !otherForm) {
+      void new Audio(entry.audio_url)
+        .play()
+        .catch(() => setError("Audio playback isn't available right now."))
+    } else {
+      // Browser voice, same as "Hear the Sentence"
+      speechSynthesis.cancel()
+      speechSynthesis.speak(new SpeechSynthesisUtterance(shownWord))
+    }
+  }
 
   return (
     <section className="reader">
@@ -91,19 +104,17 @@ function SentenceReader({ line, scores }: Props) {
       {selectedWord && (
         <aside aria-live="polite" className="word-definition">
           <div className="definition-heading">
-            <h3>{entry?.word ?? selectedWord.replace(/^[^A-Za-z]+|[^A-Za-z]+$/g, '')}</h3>
-            {entry?.phonetic && <span className="phonetic">/{entry.phonetic}/</span>}
+            <h3>{shownWord}</h3>
+            {otherForm ? (
+              <span className="phonetic">a form of “{otherForm}”</span>
+            ) : (
+              entry?.phonetic && <span className="phonetic">/{entry.phonetic}/</span>
+            )}
             <button
-              aria-label={`Play pronunciation for ${entry?.word ?? selectedWord}`}
+              aria-label={`Play pronunciation for ${shownWord}`}
               className="play-pronunciation"
-              disabled={!entry?.audio_url}
-              onClick={() => {
-                if (entry?.audio_url) {
-                  void new Audio(entry.audio_url)
-                    .play()
-                    .catch(() => setError("Audio playback isn't available right now."))
-                }
-              }}
+              disabled={!entry}
+              onClick={hearWord}
               type="button"
             >
               Hear word

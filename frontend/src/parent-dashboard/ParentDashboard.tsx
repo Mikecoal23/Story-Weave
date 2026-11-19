@@ -6,6 +6,7 @@ import WeekSummary from './WeekSummary'
 import PatternsInProgress from './PatternsInProgress'
 import TryAtHome from './TryAtHome'
 import PracticeTab from './PracticeTab'
+import ParentProfile from './ParentProfile'
 import { getDashboard } from '../api/dashboard'
 import type { Child, Dashboard } from '../api/types'
 
@@ -77,6 +78,7 @@ function ParentDashboard({ childList, onChildrenChanged, onSwitchUser, onLogout 
             onRetry={() => setAttempt(attempt + 1)}
           />
         )}
+        {tab === 'Profile' && <ParentProfile />}
         {/* Progress and Practice both use the dashboard, so they share the loading and error states */}
         {(tab === 'Progress' || tab === 'Practice') &&
           (!child ? (
@@ -85,9 +87,10 @@ function ParentDashboard({ childList, onChildrenChanged, onSwitchUser, onLogout 
             tab === 'Progress' ? (
               <>
                 <WeekSummary childName={child.name} dashboard={dashboard} />
+                {/* A child with no sessions has no real patterns or words yet, so pass empty lists */}
                 <div className="pd-grid">
-                  <PatternsInProgress patterns={dashboard.patterns} />
-                  <TryAtHome words={dashboard.try_at_home} />
+                  <PatternsInProgress patterns={dashboard.sessions === 0 ? [] : dashboard.patterns} />
+                  <TryAtHome words={dashboard.sessions === 0 ? [] : dashboard.try_at_home} />
                 </div>
               </>
             ) : (

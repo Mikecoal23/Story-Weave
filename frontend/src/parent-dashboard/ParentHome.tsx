@@ -2,6 +2,7 @@ import { useState } from 'react'
 import AddChildForm from './AddChildForm'
 import { deleteChild, getChildPin, setChildPin } from '../api/children'
 import type { Child, Dashboard } from '../api/types'
+import { lookFor } from '../child-ui/interestLooks'
 
 type Props = {
   child: Child | undefined
@@ -34,6 +35,8 @@ function ParentHome({
   const [pinError, setPinError] = useState('')
   const [pinConfiguredChildren, setPinConfiguredChildren] = useState<string[]>([])
   const pinIsSet = Boolean(child && (child.pinSet || pinConfiguredChildren.includes(child.id)))
+  // Same emoji and card color the child sees on the picker
+  const [emoji, theme] = child ? lookFor(child.interests) : ['', 'default']
 
   async function handleRemove() {
     // Deleting can't be undone, so ask first
@@ -100,66 +103,6 @@ function ParentHome({
           <button type="button" className="pd-add" onClick={() => setAdding(true)}>
             Add child
           </button>
-          <button type="button" className="pd-add" onClick={handleRemove}>
-            Remove child
-          </button>
-          <div className="pd-card">
-            <h2 className="pd-heading">{child.name}'s PIN</h2>
-            {pinIsSet && (
-              <>
-                <button type="button" className="pd-chip" onClick={handleShowPin}>
-                  {revealedPin?.childId === child.id ? 'Hide PIN' : 'Show PIN'}
-                </button>
-                {revealedPin?.childId === child.id && (
-                  <p className="pd-stat" aria-live="polite">
-                    {revealedPin.pin}
-                  </p>
-                )}
-              </>
-            )}
-            {!editingPin ? (
-              <button
-                type="button"
-                className="pd-chip"
-                onClick={() => {
-                  setPinError('')
-                  setEditingPin(true)
-                }}
-              >
-                {pinIsSet ? 'Change PIN' : 'Set PIN'}
-              </button>
-            ) : (
-              <form className="pd-form" onSubmit={handleSavePin}>
-                <label>
-                  New 4-digit PIN
-                  <input
-                    className="pd-input"
-                    type="password"
-                    inputMode="numeric"
-                    pattern="[0-9]{4}"
-                    maxLength={4}
-                    required
-                    value={pinEntry}
-                    onChange={(e) => setPinEntry(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                  />
-                </label>
-                <div className="pd-form-buttons">
-                  <button type="submit">Save PIN</button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingPin(false)
-                      setPinEntry('')
-                    }}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            )}
-            {pinError && <p className="pd-hint" role="alert">{pinError}</p>}
-          </div>
-          {removeFailed && <p className="pd-hint">Couldn't remove {child.name}. Try again.</p>}
         </>
       )}
       {!child ? (
@@ -176,8 +119,8 @@ function ParentHome({
           onCancel={() => setAdding(false)}
         />
       ) : dashboard ? (
-        <div className="pd-card">
-          <h2 className="pd-heading">{child.name}'s week</h2>
+        <div className={`pd-card pd-theme-${theme}`}>
+          <h2 className="pd-heading">{emoji} {child.name}'s week</h2>
           {dashboard.sessions === 0 ? (
             <p className="pd-stat">
               {child.name} hasn't read yet. Their first story will show up here.
@@ -201,6 +144,74 @@ function ParentHome({
         </>
       ) : (
         <p className="pd-hint">Loading…</p>
+      )}
+      {child && !adding && (
+        <div className={`pd-card pd-pin-card pd-theme-${theme}`}>
+          <h2 className="pd-heading">{emoji} {child.name}'s PIN</h2>
+          {pinIsSet && (
+            <>
+              <button type="button" className="pd-chip" onClick={handleShowPin}>
+                {revealedPin?.childId === child.id ? 'Hide PIN' : 'Show PIN'}
+              </button>
+              {revealedPin?.childId === child.id && (
+                <span className="pd-stat" aria-live="polite">
+                  {revealedPin.pin}
+                </span>
+              )}
+            </>
+          )}
+          {!editingPin ? (
+            <button
+              type="button"
+              className="pd-chip"
+              onClick={() => {
+                setPinError('')
+                setEditingPin(true)
+              }}
+            >
+              {pinIsSet ? 'Change PIN' : 'Set PIN'}
+            </button>
+          ) : (
+            <form className="pd-form" onSubmit={handleSavePin}>
+              <label>
+                New 4-digit PIN
+                <input
+                  className="pd-input"
+                  type="password"
+                  inputMode="numeric"
+                  pattern="[0-9]{4}"
+                  maxLength={4}
+                  required
+                  value={pinEntry}
+                  onChange={(e) => setPinEntry(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                />
+              </label>
+              <div className="pd-form-buttons">
+                <button type="submit">Save PIN</button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingPin(false)
+                    setPinEntry('')
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          )}
+          {pinError && <p className="pd-hint" role="alert">{pinError}</p>}
+        </div>
+      )}
+      {child && !adding && (
+        <div className={`pd-card pd-theme-${theme}`}>
+          <h2 className="pd-heading">Remove {child.name}</h2>
+          <p className="pd-stat">This deletes all of {child.name}'s reading progress.</p>
+          <button type="button" className="pd-chip" onClick={handleRemove}>
+            Remove {child.name}
+          </button>
+          {removeFailed && <p className="pd-hint">Couldn't remove {child.name}. Try again.</p>}
+        </div>
       )}
     </section>
   )

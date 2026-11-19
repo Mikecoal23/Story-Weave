@@ -53,6 +53,7 @@ Rules:
     + ", ".join(CHARACTERS)
     + """.
   If none fit, use "default".
+  "ship" means a boat on the sea. For a spaceship or anything in space, use "rocket".
 - Respond with ONLY a JSON object, no other text, shaped exactly like:
   {"title": "...", "theme": "...", "character": "...", "lines": ["...", "...", ...]}
 """

@@ -1,10 +1,13 @@
 import { API_URL } from './config'
 
 // Small wrapper around fetch: adds the base URL, reads JSON, throws on non-2xx responses
-let sessionToken = ''
+// Kept in sessionStorage so a refresh stays logged in; closing the tab clears it
+let sessionToken = sessionStorage.getItem('sessionToken') ?? ''
 
 export function setSessionToken(token: string) {
   sessionToken = token
+  if (token) sessionStorage.setItem('sessionToken', token)
+  else sessionStorage.removeItem('sessionToken')
 }
 
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {

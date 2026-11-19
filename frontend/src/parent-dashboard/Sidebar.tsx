@@ -1,4 +1,5 @@
-export type Tab = 'Home' | 'Progress' | 'Practice'
+// Profile isn't in items: it sits at the bottom with Switch user and Log out
+export type Tab = 'Home' | 'Progress' | 'Practice' | 'Profile'
 
 const items: Tab[] = ['Home', 'Progress', 'Practice']
 
@@ -24,6 +25,13 @@ function Sidebar({ active, onSelect, onSwitchUser, onLogout }: Props) {
           {item}
         </button>
       ))}
+      <button
+        type="button"
+        className={`pd-nav-item pd-profile ${active === 'Profile' ? 'active' : ''}`}
+        onClick={() => onSelect('Profile')}
+      >
+        Profile
+      </button>
       {/* Back to "Who's using StoryWeave?" without logging out */}
       <button type="button" className="pd-nav-item pd-switch" onClick={onSwitchUser}>
         Switch user

@@ -17,7 +17,8 @@ function PracticeTab({ dashboard }: Props) {
 
   // One card per pattern the child is working on, with the practice words spelled with it.
   // Patterns with no matching words (e.g. "a_e (silent-e)") are left out.
-  const activities = dashboard.working_on
+  // A child with no sessions has nothing real to practice, so ignore whatever words came back.
+  const activities = dashboard.sessions === 0 ? [] : dashboard.working_on
     .map((sound) => ({
       sound,
       words: dashboard.try_at_home.filter((word) => word.toLowerCase().includes(sound.toLowerCase())),
@@ -47,7 +48,22 @@ function PracticeTab({ dashboard }: Props) {
     }
   }
 
-  const audioUrl = lookup?.entry?.audio_url
+  // The dictionary files some words under another one ("went" is under "go"). Then its
+  // pronunciation and audio are for that other word, so they aren't used.
+  const entryWord = lookup?.entry?.word
+  const otherForm = entryWord && entryWord.toLowerCase() !== lookup.word.toLowerCase() ? entryWord : null
+  const audioUrl = otherForm ? null : lookup?.entry?.audio_url
+
+  function listen(word: string) {
+    if (audioUrl) {
+      // play() fails quietly if the browser blocks the sound
+      new Audio(audioUrl).play().catch(() => {})
+    } else {
+      // No recording for this exact word, so the browser's voice says it
+      speechSynthesis.cancel()
+      speechSynthesis.speak(new SpeechSynthesisUtterance(word))
+    }
+  }
 
   return (
     <section>
@@ -77,19 +93,15 @@ function PracticeTab({ dashboard }: Props) {
                   {lookup.entry ? (
                     <>
                       <p className="pd-stat">
-                        <strong>{lookup.entry.word}</strong>
-                        {lookup.entry.phonetic && ` (${lookup.entry.phonetic})`}: {lookup.entry.definition}
+                        <strong>{lookup.word}</strong>
+                        {otherForm
+                          ? ` (a form of “${otherForm}”)`
+                          : lookup.entry.phonetic && ` (${lookup.entry.phonetic})`}
+                        : {lookup.entry.definition}
                       </p>
-                      {audioUrl && (
-                        <button
-                          type="button"
-                          className="pd-chip"
-                          // play() fails quietly if the browser blocks the sound
-                          onClick={() => new Audio(audioUrl).play().catch(() => {})}
-                        >
-                          🔊 Listen
-                        </button>
-                      )}
+                      <button type="button" className="pd-chip" onClick={() => listen(lookup.word)}>
+                        🔊 Listen
+                      </button>
                     </>
                   ) : (
                     <p className="pd-stat">{lookup.error ? "Couldn't find that word." : 'Looking up…'}</p>

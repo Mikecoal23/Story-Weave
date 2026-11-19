@@ -71,6 +71,7 @@ def upload_line_audio(
         logger.exception("Audio assessment failed; returning 502")
         raise HTTPException(status_code=502, detail="Azure Speech assessment failed") from error
 
-    score_result = process_line_score(db, session_id, story_line.id, score_result)
+    # process_line_score saves the score but returns nothing, so keep the original result
+    process_line_score(db, session_id, story_line.id, score_result)
     db.commit()
     return LineAudioResponse(status="complete", result=score_result)

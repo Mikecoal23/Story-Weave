@@ -13,7 +13,8 @@
   --pd-pink: #efd4d4;
 
   position: relative;
-  overflow: hidden; /* crops the circles at the screen edge */
+  /* crops the circles at the screen edge. "clip" instead of "hidden" so the sticky sidebar still works */
+  overflow: clip;
   display: flex;
   min-height: 100svh;
   text-align: left;
@@ -48,8 +49,12 @@
 }
 
 /* White sidebar and main content sit above the circles */
+/* Sticky + full screen height keeps Switch user and Log out in view while the page scrolls */
 .pd-sidebar {
-  position: relative;
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  height: 100svh;
   z-index: 1;
   background: var(--pd-canvas);
   width: 220px;
@@ -130,9 +135,31 @@
   text-align: center;
 }
 
-/* The Home card isn't stretched across the whole page, so the circles show beside it */
+/* The Home card isn't stretched across the whole page, so the circles show beside it.
+   The bottom margin keeps stacked cards (and their offset shadows) from touching. */
 .pd-main > section > .pd-card {
   max-width: 36rem;
+  margin-bottom: 2rem;
+}
+
+/* Home cards use the child's picker color (same values as ChildPicker.css). "default" has no rule, so it stays lime. */
+.pd-card.pd-theme-ocean { background: #d6eefc; }
+.pd-card.pd-theme-space { background: #f2c6d8; }
+.pd-card.pd-theme-nature { background: #b9dc9c; }
+.pd-card.pd-theme-magic { background: #ead7f5; }
+.pd-card.pd-theme-cozy { background: #efc9b8; }
+
+/* Space between the Show PIN button, the PIN itself, and the Change PIN button */
+.pd-pin-card .pd-chip,
+.pd-pin-card .pd-stat {
+  margin-right: 0.75rem;
+}
+
+/* The revealed PIN is the thing the parent came to read, so make it stand out */
+.pd-pin-card .pd-stat {
+  font-size: 1.6rem;
+  font-weight: 540;
+  letter-spacing: 0.1em;
 }
 
 /* Two cards side by side on wide screens */
@@ -219,13 +246,14 @@
   gap: 1.5rem;
 }
 
+.pd-profile,
 .pd-switch,
 .pd-logout {
   border-color: var(--pd-hairline);
 }
 
-/* Pushes Switch user and Log out to the bottom of the sidebar */
-.pd-switch {
+/* Pushes Profile, Switch user and Log out to the bottom of the sidebar */
+.pd-profile {
   margin-top: auto;
 }
 
@@ -309,7 +337,11 @@ span.pd-chip {
     flex-direction: column;
   }
 
+  /* On phones the sidebar is a bar across the top, so it scrolls away normally */
   .pd-sidebar {
+    position: relative;
+    height: auto;
+    align-self: auto;
     width: auto;
     border-right: none;
     border-bottom: 1px solid var(--pd-hairline);

@@ -67,7 +67,7 @@ function Controls({ sessionId, sessionFailed, lineNumber, line, tried, onScored,
       <footer className="bottom-bar">
         {/* Off while recording or uploading, so the mic never scores the computer's voice */}
         <button className="btn btn-outline" onClick={hearLine} disabled={!tried || recording || uploading}>
-          Hear it
+          Hear the Sentence
         </button>
         <button className="btn btn-green" onClick={handleNext} disabled={(!tried && !cantRead) || recording || uploading}>
           Next line
